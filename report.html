@@ -6,20 +6,19 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- ヘッダーの読み込み -->
-    <iframe src="header.html" style="width:100%; border:none; height:60px;"></iframe>
+    <iframe src="header.html" style="width:100%; border:none; height:60px; display:block;"></iframe>
 
-    <div class="container" style="padding: 20px; max-width: 600px; margin: 0 auto;">
+    <div class="container">
         <h2>講義レビューの投稿</h2>
         
-        <div class="form-group" style="margin-bottom: 15px;">
-            <label for="subject" style="display:block; margin-bottom:5px; font-weight:bold;">科目名</label>
-            <input type="text" id="subject" placeholder="例: 情報処理概論" style="width:100%; padding:8px; box-sizing:border-box;">
+        <div class="form-group">
+            <label for="subject">科目名</label>
+            <input type="text" id="subject" placeholder="例: 情報処理概論">
         </div>
 
-        <div class="form-group" style="margin-bottom: 15px;">
-            <label for="rating" style="display:block; margin-bottom:5px; font-weight:bold;">おすすめ度 (星1〜5)</label>
-            <select id="rating" style="width:100%; padding:8px;">
+        <div class="form-group">
+            <label for="rating">おすすめ度</label>
+            <select id="rating">
                 <option value="5">★★★★★ (非常におすすめ)</option>
                 <option value="4">★★★★☆ (おすすめ)</option>
                 <option value="3">★★★☆☆ (普通)</option>
@@ -28,20 +27,19 @@
             </select>
         </div>
 
-        <div class="form-group" style="margin-bottom: 15px;">
-            <label for="percentage" style="display:block; margin-bottom:5px; font-weight:bold;">小テスト・レポートの割合 (%)</label>
-            <input type="number" id="percentage" placeholder="例: 30" min="0" max="100" style="width:100%; padding:8px; box-sizing:border-box;">
+        <div class="form-group">
+            <label for="percentage">小テスト・レポートの割合 (%)</label>
+            <input type="number" id="percentage" placeholder="例: 30" min="0" max="100">
         </div>
 
-        <div class="form-group" style="margin-bottom: 20px;">
-            <label for="comment" style="display:block; margin-bottom:5px; font-weight:bold;">感想・アドバイス</label>
-            <textarea id="comment" rows="5" placeholder="テストの傾向や、出席の重要さなどを自由に書いてください" style="width:100%; padding:8px; box-sizing:border-box;"></textarea>
+        <div class="form-group">
+            <label for="comment">感想・アドバイス</label>
+            <textarea id="comment" rows="5" placeholder="テストの傾向や、出席の重要さなどを自由に書いてください"></textarea>
         </div>
 
-        <button onclick="submitReview()" style="width:100%; padding:10px; background:#2c3e50; color:white; border:none; cursor:pointer; font-size:16px;">投稿する</button>
+        <button onclick="submitReview()">投稿する</button>
     </div>
 
-    <!-- データを通信するためのリポジトリフレーム -->
     <iframe src="Repository.html" id="repo-iframe" style="display:none;"></iframe>
 
     <script>
@@ -56,7 +54,6 @@
             return;
         }
 
-        // リポジトリの準備を待ってから実行
         const repoFrame = document.getElementById('repo-iframe').contentWindow;
         if (!repoFrame || !repoFrame.userRepo) {
             alert("システムの読み込み中です。もう一度お試しください。");
@@ -70,7 +67,6 @@
             return;
         }
 
-        // 送信処理
         const res = await repoFrame.reviewRepo.create(currentUser.studentId, subject, rating, comment, percentage);
         
         if (res.success) {
