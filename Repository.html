@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body>
+<!-- 依存関係としてDatabase.htmlを先に読み込みます -->
+<iframe src="Database.html" id="db-iframe" style="display:none;"></iframe>
+
+<script>
+class UserRepository {
+    getCurrentUser() {
+        const userJson = localStorage.getItem('kamokun_user');
+        return userJson ? JSON.parse(userJson) : null;
+    }
+
+    setCurrentUser(user) {
+        localStorage.setItem('kamokun_user', JSON.stringify(user));
+    }
+
+    clear() {
+        localStorage.removeItem('kamokun_user');
+    }
+
+    async login(studentId, grade) {
+        const dbFrame = document.getElementById('db-iframe').contentWindow;
+        const db = new dbFrame.Database();
+        const res = await db.request('login', { studentId, grade });
+        if (res.success) {
+            this.setCurrentUser(res.user);
+        }
+        return res;
+    }
+}
+
+class ReviewRepository {
+    async getAll() {
+        const dbFrame = document.getElementById('db-iframe').contentWindow;
+        const db = new dbFrame.Database();
+        return await db.request('getReviews');
+    }
+
+    // 新しい引数 percentage (小テスト・レポート割合) に完全対応
+    async create(studentId, subject, rating, comment, percentage) {
+        const dbFrame = document.getElementById('db-iframe').contentWindow;
+        const db = new dbFrame.Database();
+        return await db.request('createReview', { 
+            studentId, 
+            subject, 
+            rating: parseInt(rating, 10), 
+            comment,
+            percentage: percentage !== "" ? parseInt(percentage, 10) : 0
+        });
+    }
+}
+
+// グローバルにインスタンスを展開
+window.userRepo = new UserRepository();
+window.reviewRepo = new ReviewRepository();
+</script>
+</body>
+</html>
