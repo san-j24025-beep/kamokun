@@ -1,24 +1,25 @@
 <!DOCTYPE html>
 <html>
-<head><meta charset="UTF-8"></head>
+<head>
+    <meta charset="UTF-8">
+    <title>Database</title>
+</head>
 <body>
 <script>
 class Database {
     constructor() {
-        // ご提示いただいた正しいURLをセットしています
+        // あなたの正しいGASウェブアプリURL
         this.gasUrl = 'https://script.google.com/macros/s/AKfycbyp2xDnWOQATqSohHHU-eqJuEBSlG6tcPb_KXIXWOmXyaB5k6Oo_--nJpNJZOB0w2u0sw/exec';
     }
 
     async request(action, data = {}) {
         try {
-            // URLに特殊文字が含まれる場合の不具合を防ぐため、安全な形に自動変換（エンコード）します
             const safeUrl = encodeURI(this.gasUrl);
-
             const response = await fetch(safeUrl, {
                 method: 'POST',
                 mode: 'cors',
                 headers: {
-                    'Content-Type': 'text/plain', // GASのCORS制約を回避するための設定
+                    'Content-Type': 'text/plain',
                 },
                 body: JSON.stringify({ action, ...data })
             });
@@ -29,7 +30,6 @@ class Database {
         }
     }
 }
-// グローバル（windowオブジェクト）に展開
 window.Database = Database;
 </script>
 </body>

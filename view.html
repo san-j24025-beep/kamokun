@@ -1,56 +1,99 @@
-<!-- view.html の <h2> のすぐ下に以下を追加 -->
-<div style="margin-bottom: 20px;">
-    <label>並び替え: </label>
-    <select id="sortOrder" onchange="renderReviews()">
-        <option value="frequency">重複が多い順 (デフォルト)</option>
-        <option value="rating">おすすめ度順</option>
-        <option value="newest">新しい順</option>
-    </select>
-</div>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>レビューを見る - かもくん</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .card { background: white; border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .card-header { display: flex; justify-content: space-between; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 10px; }
+        .rating { color: #f1c40f; }
+        .comment { font-size: 14px; color: #333; line-height: 1.5; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <iframe src="header.html" style="width:100%; border:none; height:60px;"></iframe>
 
-<!-- JavaScript の onAppReady を書き換え -->
-<script>
-let allReviews = [];
+    <div class="container" style="padding: 20px; max-width: 800px; margin: 0 auto;">
+        <h2>講義レビュー一覧</h2>
+        
+        <!-- 並び替えセレクトボックス -->
+        <div style="margin-bottom: 20px; background: #f8f9fa; padding: 10px; border-radius: 5px;">
+            <label for="sortOrder" style="font-weight:bold;">並び替え: </label>
+            <select id="sortOrder" onchange="renderReviews()" style="padding: 5px 10px;">
+                <option value="frequency">重複が多い順 (デフォルト)</option>
+                <option value="rating">おすすめ度順</option>
+                <option value="newest">新しい順</option>
+            </select>
+        </div>
 
-async function onAppReady() {
-    const res = await window.reviewRepo.getAll();
-    if (res.success) {
-        allReviews = res.data;
-        renderReviews();
+        <div id="reviews-list">データを読み込み中...</div>
+    </div>
+
+    <iframe src="Repository.html" id="repo-iframe" style="display:none;"></iframe>
+
+    <script>
+    let allReviews = [];
+
+    // iframe内のリポジトリが読み込まれるのを待つ
+    window.onload = function() {
+        const checkReady = setInterval(() => {
+            const repoFrame = document.getElementById('repo-iframe').contentWindow;
+            if (repoFrame && repoFrame.reviewRepo) {
+                clearInterval(checkReady);
+                loadReviews(repoFrame.reviewRepo);
+            }
+        }, 100);
+    };
+
+    async function loadReviews(reviewRepo) {
+        const res = await reviewRepo.getAll();
+        if (res.success) {
+            allReviews = res.data;
+            renderReviews();
+        } else {
+            document.getElementById('reviews-list').innerText = "データの取得に失敗しました: " + res.error;
+        }
     }
-}
 
-function renderReviews() {
-    const listDiv = document.getElementById('reviews-list');
-    const sortBy = document.getElementById('sortOrder').value;
-    let data = [...allReviews];
+    function renderReviews() {
+        const listDiv = document.getElementById('reviews-list');
+        const sortBy = document.getElementById('sortOrder').value;
+        let data = [...allReviews];
 
-    // 並び替えロジック
-    if (sortBy === 'newest') {
-        data.sort((a, b) => b.timestamp - a.timestamp);
-    } else if (sortBy === 'rating') {
-        data.sort((a, b) => b.rating - a.rating);
-    } else {
-        // 重複が多い順
-        const counts = {};
-        data.forEach(item => counts[item.subject] = (counts[item.subject] || 0) + 1);
-        data.sort((a, b) => counts[b.subject] - counts[a.subject]);
+        if (data.length === 0) {
+            listDiv.innerText = "まだレビューがありません。最初のレビューを投稿してみましょう！";
+            return;
+        }
+
+        // 並び替えロジックの実行
+        if (sortBy === 'newest') {
+            data.sort((a, b) => b.timestamp - a.timestamp);
+        } else if (sortBy === 'rating') {
+            data.sort((a, b) => b.rating - a.rating);
+        } else {
+            // 重複（件数）が多い順
+            const counts = {};
+            data.forEach(item => counts[item.subject] = (counts[item.subject] || 0) + 1);
+            data.sort((a, b) => counts[b.subject] - counts[a.subject]);
+        }
+
+        listDiv.innerHTML = "";
+        data.forEach(item => {
+            const stars = "★".repeat(item.rating) + "☆".repeat(5 - item.rating);
+            const card = document.createElement('div');
+            card.className = "card";
+            card.innerHTML = `
+                <div class="card-header">
+                    <div>科目名: ${item.subject} <span style="font-weight:normal; font-size:13px; color:#e67e22; margin-left:10px;">(レポート等割合: ${item.percentage}%)</span></div>
+                    <div class="rating">${stars}</div>
+                </div>
+                <div class="comment">${item.comment}</div>
+                <div style="font-size:12px; color:#7f8c8d; text-align:right; margin-top:10px;">投稿者ID: ${item.studentId}</div>
+            `;
+            listDiv.appendChild(card);
+        });
     }
-
-    listDiv.innerHTML = "";
-    data.forEach(item => {
-        const stars = "★".repeat(item.rating) + "☆".repeat(5 - item.rating);
-        const card = document.createElement('div');
-        card.className = "card";
-        card.innerHTML = `
-            <div class="card-header">
-                <div>科目: ${item.subject} (${item.percentage}%)</div>
-                <div class="rating">${stars}</div>
-            </div>
-            <div class="comment">${item.comment}</div>
-            <div style="font-size:12px; color:#7f8c8d; text-align:right; margin-top:10px;">投稿者: ${item.studentId}</div>
-        `;
-        listDiv.appendChild(card);
-    });
-}
-</script>
+    </script>
+</body>
+</html>
