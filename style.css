@@ -1,162 +1,139 @@
-/* 全体共通のリセットと基本設定 */
-body {
+/* ==========================================
+   1. 画面全体のリセット（位置ズレの根本解消）
+   ========================================== */
+html, body {
     margin: 0;
     padding: 0;
-    font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
-    background-color: #f4f6f8;
+    width: 100%;
+    min-height: 100vh;
+    font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
+    background: linear-gradient(135deg, #2c3e50, #4a00e0); /* 背景のグラデーション */
     color: #333;
-    line-height: 1.6;
-}
-
-/* メインコンテナ（中央配置・幅の統一） */
-.container {
-    max-width: 680px;
-    margin: 40px auto;
-    padding: 30px;
-    background: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column; /* ヘッダーを上、中身を下へ正しく並べる */
+    align-items: center;
     box-sizing: border-box;
 }
 
-/* タイトルスタイル */
-h2 {
-    margin-top: 0;
-    margin-bottom: 24px;
-    color: #2c3e50;
-    font-size: 24px;
-    font-weight: 700;
-    border-bottom: 2px solid #eceff1;
-    padding-bottom: 12px;
+/* ==========================================
+   2. ヘッダー iframe の完全横幅リセット
+   ========================================== */
+iframe[src="header.html"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 70px !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    position: relative;
+    z-index: 100;
 }
 
-/* フォームグループ */
+/* ==========================================
+   3. メイン白ボックス（中央配置・ごちゃつき解消）
+   ========================================== */
+.container {
+    width: 90%;
+    max-width: 600px;
+    margin: 40px auto; /* 上下に適度な余白 */
+    padding: 35px;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    box-sizing: border-box;
+}
+
+/* タイトル */
+h2 {
+    margin: 0 0 24px 0;
+    color: #1a2a3a;
+    font-size: 22px;
+    font-weight: 700;
+    text-align: center;
+    border-bottom: 2px solid #edf2f7;
+    padding-bottom: 15px;
+}
+
+/* ==========================================
+   4. フォーム要素の統一デザイン
+   ========================================== */
 .form-group {
     margin-bottom: 20px;
+    text-align: left; /* 文字を左寄せに固定 */
 }
 
 label {
     display: block;
     margin-bottom: 8px;
     font-weight: 600;
-    color: #455a64;
+    color: #4a5568;
     font-size: 14px;
 }
 
-/* 入力要素の統一（input, select, textarea） */
+/* 入力枠のサイズと余白を完全に揃える */
 input[type="text"],
 input[type="number"],
 select,
 textarea {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #cfd8dc;
-    border-radius: 6px;
-    background-color: #fafafa;
-    font-size: 15px;
-    color: #333;
-    transition: all 0.3s ease;
-    box-sizing: border-box;
+    width: 100% !important;
+    padding: 12px 14px !important;
+    border: 1px solid #cbd5e0 !important;
+    border-radius: 8px !important;
+    background-color: #f8fafc !important;
+    font-size: 15px !important;
+    color: #2d3748 !important;
+    transition: all 0.2s ease;
+    box-sizing: border-box !important;
 }
 
+/* 入力中（フォーカス時）のエフェクト */
 input:focus, select:focus, textarea:focus {
-    outline: none;
-    border-color: #34495e;
-    background-color: #ffffff;
-    box-shadow: 0 0 0 3px rgba(52, 73, 94, 0.1);
+    outline: none !important;
+    border-color: #4a00e0 !important;
+    background-color: #ffffff !important;
+    box-shadow: 0 0 0 3px rgba(74, 0, 224, 0.15) !important;
 }
 
-/* ボタンデザイン */
+/* ==========================================
+   5. ボタン・パーツデザイン
+   ========================================== */
 button {
-    width: 100%;
-    padding: 14px;
-    background-color: #2c3e50;
-    color: #ffffff;
-    border: none;
-    border-radius: 6px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
+    width: 100% !important;
+    padding: 14px !important;
+    background: #2c3e50 !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: background 0.2s ease !important;
+    box-sizing: border-box !important;
+    margin-top: 10px;
 }
 
 button:hover {
-    background-color: #34495e;
+    background: #1a252f !important;
 }
 
-/* 並び替えエリアのラッパー */
+/* 閲覧画面（view.html）用のカード共通デザイン */
 .sort-box {
     display: flex;
     align-items: center;
     background: #edf2f7;
-    padding: 12px 16px;
+    padding: 12px;
     border-radius: 8px;
-    margin-bottom: 24px;
-    gap: 12px;
-}
-.sort-box label {
-    margin-bottom: 0;
-    white-space: nowrap;
-}
-.sort-box select {
-    width: auto;
-    padding: 8px 32px 8px 12px;
-    background-color: #ffffff;
+    margin-bottom: 20px;
+    gap: 10px;
 }
 
-/* レビューカードのデザイン */
 .card {
     background: #ffffff;
     border: 1px solid #e2e8f0;
     padding: 20px;
-    margin-bottom: 16px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-}
-
-.card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    border-bottom: 1px solid #edf2f7;
-    padding-bottom: 10px;
-    margin-bottom: 12px;
-}
-
-.subject-name {
-    font-weight: 700;
-    font-size: 16px;
-    color: #2c3e50;
-}
-
-.percentage-badge {
-    display: inline-block;
-    font-size: 12px;
-    color: #e67e22;
-    background: #fff5eb;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-weight: 600;
-    margin-left: 8px;
-}
-
-.rating {
-    color: #f1c40f;
-    font-size: 16px;
-    letter-spacing: 2px;
-    white-space: nowrap;
-}
-
-.comment {
-    font-size: 14px;
-    color: #4a5568;
-    line-height: 1.6;
-    white-space: pre-wrap;
-}
-
-.card-footer {
-    font-size: 12px;
-    color: #a0aec0;
-    text-align: right;
-    margin-top: 12px;
+    margin-bottom: 15px;
+    border-radius: 10px;
+    text-align: left;
 }
