@@ -5,13 +5,16 @@
 <script>
 class Database {
     constructor() {
-        // Google Apps Script (GAS) のWebアプリURLをここに貼り付けます
+        // ご提示いただいた正しいURLをセットしています
         this.gasUrl = 'https://script.google.com/macros/s/AKfycbyp2xDnWOQATqSohHHU-eqJuEBSlG6tcPb_KXIXWOmXyaB5k6Oo_--nJpNJZOB0w2u0sw/exec';
     }
 
     async request(action, data = {}) {
         try {
-            const response = await fetch(this.gasUrl, {
+            // URLに特殊文字が含まれる場合の不具合を防ぐため、安全な形に自動変換（エンコード）します
+            const safeUrl = encodeURI(this.gasUrl);
+
+            const response = await fetch(safeUrl, {
                 method: 'POST',
                 mode: 'cors',
                 headers: {
@@ -26,7 +29,7 @@ class Database {
         }
     }
 }
-// グローバル（windowオブジェクト）に展開して他ファイルから使えるようにします
+// グローバル（windowオブジェクト）に展開
 window.Database = Database;
 </script>
 </body>
