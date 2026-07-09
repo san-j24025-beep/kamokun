@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>レビュー投稿 - かもくん</title>
+    <style>
+        body { font-family: sans-serif; margin: 0; padding: 0; background: #f5f6fa; color: #2f3640; }
+        .container { max-width: 600px; margin: 30px auto; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        textarea { height: 120px; resize: vertical; }
+        .btn { padding: 10px 20px; background: #2ecc71; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
+        .btn:hover { background: #27ae60; }
+    </style>
+    <!-- [ここにindex.htmlと同じ共通ローダーの<script>〜</script>を入れてください] -->
+</head>
+<body>
+    <div id="header-layout"></div>
+
+    <div class="container">
+        <h2>新規レビュー・レポート投稿</h2>
+        <div class="form-group">
+            <label for="subject">科目名</label>
+            <input type="text" id="subject" placeholder="例: プログラミング基礎演習">
+        </div>
+        <div class="form-group">
+            <label for="rating">おすすめ度（5段階）</label>
+            <select id="rating">
+                <option value="5">★★★★★ (とても良い)</option>
+                <option value="4">★★★★☆ (良い)</option>
+                <option value="3">★★★☆☆ (普通)</option>
+                <option value="2">★★☆☆☆ (やや厳しい)</option>
+                <option value="1">★☆☆☆☆ (厳しい)</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="comment">感想・レポート内容・アドバイス</label>
+            <textarea id="comment" placeholder="授業内容やテストの傾向、レポートの難易度など"></textarea>
+        </div>
+        <button class="btn" onclick="submitReview()">投稿する</button>
+    </div>
+
+    <div id="footer-layout"></div>
+
+    <script>
+    async function submitReview() {
+        const subject = document.getElementById('subject').value.trim();
+        const rating = document.getElementById('rating').value;
+        const comment = document.getElementById('comment').value.trim();
+        
+        if (!subject || !comment) {
+            alert("すべての項目を入力してください。");
+            return;
+        }
+
+        const currentUser = window.userRepo.getCurrentUser();
+        const res = await window.reviewRepo.create(currentUser.studentId, subject, rating, comment);
+        
+        if (res.success) {
+            alert("投稿が完了しました！");
+            location.href = 'view.html';
+        } else {
+            alert("エラー: " + res.error);
+        }
+    }
+    </script>
+</body>
+</html>

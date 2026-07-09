@@ -1,85 +1,80 @@
-<?php
-require_once 'User.php';
-
-if (User::isLoggedIn()) {
-    header('Location: index.php');
-    exit;
-}
-
-$error = '';
-$success = '';
-$mode = $_POST['mode'] ?? 'login'; // 'login' または 'register'
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $userClass = new User();
-    $studentId = $_POST['student_id'] ?? '';
-    $grade = $_POST['grade'] ?? '';
-
-    if ($mode === 'register') {
-        $res = $userClass->register($studentId, $grade);
-        if ($res['success']) {
-            $success = $res['message'] . ' ログインしてください。';
-            $mode = 'login'; 
-        } else { $error = $res['message']; }
-    } else {
-        $res = $userClass->login($studentId, $grade);
-        if ($res['success']) {
-            header('Location: index.php');
-            exit;
-        } else { $error = $res['message']; }
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ログイン - かもくん</title>
+    <style>
+        body { font-family: sans-serif; margin: 0; padding: 0; background: #f5f6fa; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .login-box { width: 100%; max-width: 400px; padding: 30px; background: white; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h2 { text-align: center; margin-bottom: 24px; color: #2c3e50; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        .btn { width: 100%; padding: 12px; background: #3498db; color: white; border: none; border-radius: 4px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn:hover { background: #2980b9; }
+        .error { color: #e74c3c; margin-top: 10px; text-align: center; font-size: 14px; }
+    </style>
+    <script>
+    // ログイン用の軽量版インポート
+    async function initApp() {
+        const components = ['Database.html', 'User.html'];
+        for (const comp of components) {
+            const res = await fetch(comp);
+            const text = await res.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(text, 'text/html');
+            const script = doc.querySelector('script');
+            if (script) {
+                const newScript = document.createElement('script');
+                newScript.textContent = script.textContent;
+                document.head.appendChild(newScript);
+            }
+        }
+        window.db = new window.Database();
+        window.userRepo = new window.User(window.db);
     }
-}
-
-require_once 'header.php';
-?>
-
-<h2 id="auth-title"><?= $mode === 'register' ? '新規アカウント登録' : 'ログイン' ?></h2>
-
-<?php if ($error): ?><div class="alert alert-danger"><?= htmlspecialchars($error) ?></div><?php endif; ?>
-<?php if ($success): ?><div class="alert alert-success"><?= htmlspecialchars($success) ?></div><?php endif; ?>
-
-<form action="login.php" method="POST" id="auth-form">
-    <input type="hidden" name="mode" id="auth-mode" value="<?= htmlspecialchars($mode) ?>">
-    
-    <div class="form-group">
-        <label for="student_id">学籍番号</label>
-        <input type="text" name="student_id" id="student_id" class="form-control" placeholder="J25001" maxlength="10" style="text-transform: uppercase;" value="<?= htmlspecialchars($_POST['student_id'] ?? '') ?>" required>
+    document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</head>
+<body>
+    <div class="login-box">
+        <h2>かもくん ログイン</h2>
+        <div class="form-group">
+            <label for="studentId">学籍番号</label>
+            <input type="text" id="studentId" placeholder="例: J24025">
+        </div>
+        <div class="form-group">
+            <label for="grade">学年</label>
+            <select id="grade">
+                <option value="1">1年</option>
+                <option value="2">2年</option>
+                <option value="3">3年</option>
+                <option value="4">4年</option>
+            </select>
+        </div>
+        <button class="btn" onclick="handleLogin()">ログイン</button>
+        <div id="error-msg" class="error"></div>
     </div>
-    <div class="form-group">
-        <label for="grade">学年</label>
-        <select name="grade" id="grade" class="form-control" required>
-            <option value="">選択してください</option>
-            <?php for($i=1; $i<=4; $i++): ?>
-                <option value="<?= $i ?>" <?= (isset($_POST['grade']) && $_POST['grade'] == $i) ? 'selected' : '' ?>><?= $i ?>年</option>
-            <?php endfor; ?>
-        </select>
-    </div>
-    <button type="submit" class="btn"><?= $mode === 'register' ? '新規登録してログイン' : 'ログイン' ?></button>
-</form>
 
-<div class="btn-toggle-auth" onclick="toggleMode()">
-    <?= $mode === 'register' ? '既にアカウントをお持ちの方はこちら' : '新規アカウント登録はこちら' ?>
-</div>
+    <script>
+    async function handleLogin() {
+        const studentId = document.getElementById('studentId').value.trim();
+        const grade = document.getElementById('grade').value;
+        const errorMsg = document.getElementById('error-msg');
+        errorMsg.innerText = "";
 
-<script>
-function toggleMode() {
-    const modeInput = document.getElementById('auth-mode');
-    const title = document.getElementById('auth-title');
-    const btn = document.querySelector('#auth-form .btn');
-    const toggleDiv = document.querySelector('.btn-toggle-auth');
-    
-    if (modeInput.value === 'login') {
-        modeInput.value = 'register';
-        title.textContent = '新規アカウント登録';
-        btn.textContent = '新規登録してログイン';
-        toggleDiv.textContent = '既にアカウントをお持ちの方はこちら';
-    } else {
-        modeInput.value = 'login';
-        title.textContent = 'ログイン';
-        btn.textContent = 'ログイン';
-        toggleDiv.textContent = '新規アカウント登録はこちら';
+        if (!studentId) {
+            errorMsg.innerText = "学籍番号を入力してください。";
+            return;
+        }
+
+        const res = await window.userRepo.login(studentId, grade);
+        if (res.success) {
+            location.href = 'index.html';
+        } else {
+            errorMsg.innerText = res.error;
+        }
     }
-}
-</script>
-
-<?php require_once 'footer.php'; ?>
+    </script>
+</body>
+</html>

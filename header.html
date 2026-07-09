@@ -1,26 +1,8 @@
-<?php
-require_once 'User.php';
-if (session_status() == PHP_SESSION_NONE) { session_start(); }
-$isLoggedIn = User::isLoggedIn();
-$current_page = basename($_SERVER['PHP_SELF']);
-?>
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>単位ナビ - 大学単位取得支援アプリ</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <?php if ($isLoggedIn && $current_page !== 'index.php'): ?>
-                <a href="index.php" class="btn-back">◀</a>
-            <?php endif; ?>
-            <h1>単位ナビ</h1>
-            <?php if ($isLoggedIn): ?>
-                <a href="logout.php" class="btn-logout">ログアウト</a>
-            <?php endif; ?>
-        </div>
-        <div class="content">
+<header style="background: #2c3e50; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; font-family: sans-serif;">
+    <h1 style="margin: 0; font-size: 20px;"><a href="index.html" style="color: white; text-decoration: none;">かもくん (kamokun)</a></h1>
+    <nav>
+        <a href="view.html" style="color: white; margin-right: 15px; text-decoration: none;">レビューを見る</a>
+        <a href="report.html" style="color: white; margin-right: 15px; text-decoration: none;">レビューを書く</a>
+        <a href="logout.html" style="color: #ff7675; text-decoration: none; font-weight: bold;">ログアウト</a>
+    </nav>
+</header>

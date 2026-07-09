@@ -1,5 +1,16 @@
-<?php
-require_once 'User.php';
-User::logout();
-header('Location: login.php');
-exit;
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ログアウト - かもくん</title>
+    <!-- [ここにindex.htmlと同じ共通ローダーの<script>〜</script>を入れてください] -->
+</head>
+<body>
+    <p style="text-align:center; margin-top:50px; font-family:sans-serif;">ログアウト処理中...</p>
+    <script>
+    function onAppReady() {
+        window.userRepo.logout();
+    }
+    </script>
+</body>
+</html>
