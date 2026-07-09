@@ -1,52 +1,56 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <title>レビュー一覧 - かもくん</title>
-    <style>
-        body { font-family: sans-serif; margin: 0; padding: 0; background: #f5f6fa; color: #2f3640; }
-        .container { max-width: 800px; margin: 30px auto; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .card { padding: 15px; border-radius: 6px; margin-bottom: 15px; background: #f8f9fa; border: 1px solid #ddd; }
-        .card-header { display: flex; justify-content: space-between; font-weight: bold; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 10px; color: #2c3e50; }
-        .rating { color: #f1c40f; }
-        .comment { white-space: pre-wrap; line-height: 1.5; }
-    </style>
-    <!-- [ここにindex.htmlと同じ共通ローダーの<script>〜</script>を入れてください] -->
-</head>
-<body>
-    <div id="header-layout"></div>
+<!-- view.html の <h2> のすぐ下に以下を追加 -->
+<div style="margin-bottom: 20px;">
+    <label>並び替え: </label>
+    <select id="sortOrder" onchange="renderReviews()">
+        <option value="frequency">重複が多い順 (デフォルト)</option>
+        <option value="rating">おすすめ度順</option>
+        <option value="newest">新しい順</option>
+    </select>
+</div>
 
-    <div class="container">
-        <h2>科目レビュー・レポート一覧</h2>
-        <div id="reviews-list">データを読み込み中...</div>
-    </div>
+<!-- JavaScript の onAppReady を書き換え -->
+<script>
+let allReviews = [];
 
-    <div id="footer-layout"></div>
-
-    <script>
-    async function onAppReady() {
-        const listDiv = document.getElementById('reviews-list');
-        const res = await window.reviewRepo.getAll();
-        
-        if (!res.success) {
-            listDiv.innerText = "データの取得に失敗しました: " + res.error;
-            return;
-        }
-
-        if (!res.data || res.data.length === 0) {
-            listDiv.innerText = "まだレビューが投稿されていません。";
-            return;
-        }
-
-        listDiv.innerHTML = "";
-        res.data.forEach(item => {
-            const stars = "★".repeat(item.rating) + "☆".repeat(5 - item.rating);
-            const card = document.createElement('div');
-            card.className = "card";
-            card.innerHTML = '<div class="card-header"><div>科目: ' + item.subject + '</div><div class="rating">' + stars + '</div></div><div class="comment">' + item.comment + '</div><div style="font-size:12px; color:#7f8c8d; text-align:right; margin-top:10px;">投稿者: ' + item.studentId + '</div>';
-            listDiv.appendChild(card);
-        });
+async function onAppReady() {
+    const res = await window.reviewRepo.getAll();
+    if (res.success) {
+        allReviews = res.data;
+        renderReviews();
     }
-    </script>
-</body>
-</html>
+}
+
+function renderReviews() {
+    const listDiv = document.getElementById('reviews-list');
+    const sortBy = document.getElementById('sortOrder').value;
+    let data = [...allReviews];
+
+    // 並び替えロジック
+    if (sortBy === 'newest') {
+        data.sort((a, b) => b.timestamp - a.timestamp);
+    } else if (sortBy === 'rating') {
+        data.sort((a, b) => b.rating - a.rating);
+    } else {
+        // 重複が多い順
+        const counts = {};
+        data.forEach(item => counts[item.subject] = (counts[item.subject] || 0) + 1);
+        data.sort((a, b) => counts[b.subject] - counts[a.subject]);
+    }
+
+    listDiv.innerHTML = "";
+    data.forEach(item => {
+        const stars = "★".repeat(item.rating) + "☆".repeat(5 - item.rating);
+        const card = document.createElement('div');
+        card.className = "card";
+        card.innerHTML = `
+            <div class="card-header">
+                <div>科目: ${item.subject} (${item.percentage}%)</div>
+                <div class="rating">${stars}</div>
+            </div>
+            <div class="comment">${item.comment}</div>
+            <div style="font-size:12px; color:#7f8c8d; text-align:right; margin-top:10px;">投稿者: ${item.studentId}</div>
+        `;
+        listDiv.appendChild(card);
+    });
+}
+</script>
