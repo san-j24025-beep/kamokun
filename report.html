@@ -11,17 +11,14 @@
     <div class="container">
         <h2>講義レビューの投稿</h2>
         
-        <!-- 分野・学科の入力欄（ここを打つと下の科目候補が絞り込まれる） -->
         <div class="form-group">
             <label for="department">分野・系列（候補を絞り込む）</label>
             <input type="text" id="department" placeholder="例: 情報科学、データ、ロボ、共通、専門基礎、教職（空欄で全表示）" oninput="updateSubjectSuggestions()">
         </div>
 
-        <!-- 科目名の選択式入力欄 -->
         <div class="form-group">
             <label for="subject">科目名</label>
             <input type="text" id="subject" list="subject-options" placeholder="分野名を入れるか、直接入力・選択してください">
-            <!-- 候補がポップアップするデータリスト -->
             <datalist id="subject-options"></datalist>
         </div>
 
@@ -46,135 +43,63 @@
             <textarea id="comment" rows="5" placeholder="テストの傾向や、出席の重要さなどを自由に書いてください"></textarea>
         </div>
 
-        <button onclick="submitReview()">投稿する</button>
+        <!-- 初期状態は無効化（disabled）しておき、システム準備完了で有効化します -->
+        <button id="submit-btn" onclick="submitReview()" disabled style="background-color: #7f8c8d; cursor: not-allowed;">システム読み込み中...</button>
     </div>
 
     <iframe src="Repository.html" id="repo-iframe" style="display:none;"></iframe>
 
     <script>
-    // ==========================================
-    // 写真の全59科目を分野別に完全網羅したマスタデータ
-    // ==========================================
+    // 全59科目のマスタデータ
     const masterSubjects = [
-        // --- 情報科学 ---
-        { dept: "情報科学", name: "情報と職業" },
-        { dept: "情報科学", name: "情報科学演習3" },
-        { dept: "情報科学", name: "情報科学演習4" },
-        { dept: "情報科学", name: "画像情報処理" },
-        { dept: "情報科学", name: "情報理論" },
-        { dept: "情報科学", name: "情報セキュリティ" },
-        { dept: "情報科学", name: "量子情報科学" },
-        { dept: "情報科学", name: "計算機アーキテクチャ" },
-        { dept: "情報科学", name: "コンピュータグラフィックス" },
-        { dept: "情報科学", name: "オペレーティングシステム" },
-        { dept: "情報科学", name: "情報社会論" },
-        { dept: "情報科学", name: "情報システムデザイン" },
-        { dept: "情報科学", name: "プログラミング3" },
-        { dept: "情報科学", name: "プログラミング4" },
-        { dept: "情報科学", name: "情報科学演習1" },
-        { dept: "情報科学", name: "情報科学演習2" },
-        { dept: "情報科学", name: "Web技術" },
-        { dept: "情報科学", name: "コンピュータネットワーク" },
-        { dept: "情報科学", name: "データ構造とアルゴリズム" },
-        { dept: "情報科学", name: "データベース論" },
-        { dept: "情報科学", name: "オートマトンと計算理論" },
-        { dept: "情報科学", name: "プログラミング1" },
-        { dept: "情報科学", name: "プログラミング2" },
-
-        // --- データサイエンス ---
-        { dept: "データサイエンス", name: "オペレーションズリサーチ" },
-        { dept: "データサイエンス", name: "経営情報学" },
-        { dept: "データサイエンス", name: "管理工学概論" },
-        { dept: "データサイエンス", name: "人工知能の応用" },
-        { dept: "データサイエンス", name: "コンピュータシミュレーション" },
-        { dept: "データサイエンス", name: "計測工学" },
-        { dept: "データサイエンス", name: "人工知能の基礎" },
-        { dept: "データサイエンス", name: "データサイエンス応用基礎1" },
-        { dept: "データサイエンス", name: "データサイエンス応用基礎2" },
-        { dept: "データサイエンス", name: "数理統計学" },
-        { dept: "データサイエンス", name: "データサイエンス・AI入門" },
-
-        // --- ロボティクス ---
-        { dept: "ロボティクス", name: "自動制御" },
-        { dept: "ロボティクス", name: "メカトロニクス" },
-        { dept: "ロボティクス", name: "ロボットセンシング" },
-        { dept: "ロボティクス", name: "論理回路" },
-        { dept: "ロボティクス", name: "電子回路" },
-        { dept: "ロボティクス", name: "電子デバイス" },
-        { dept: "ロボティクス", name: "ラプラス変換・フーリエ解析" },
-        { dept: "ロボティクス", name: "電気回路1" },
-        { dept: "ロボティクス", name: "電気回路2" },
-        { dept: "ロボティクス", name: "電磁気学" },
-        { dept: "ロボティクス", name: "機械要素設計" },
-        { dept: "ロボティクス", name: "ロボティクス概論" },
-
-        // --- 共通教育 ---
-        { dept: "共通教育", name: "英語コミュニケーション" },
-        { dept: "共通教育", name: "英語3" },
-        { dept: "共通教育", name: "英語4" },
-        { dept: "共通教育", name: "法学" },
-        { dept: "共通教育", name: "英語1" },
-        { dept: "共通教育", name: "英語2" },
-        { dept: "共通教育", name: "スポーツ科学" },
-        { dept: "共通教育", name: "地理学" },
-        { dept: "共通教育", name: "健康支援学" },
-        { dept: "共通教育", name: "社会学" },
-        { dept: "共通教育", name: "経済学" },
-        { dept: "共通教育", name: "心理学" },
-        { dept: "共通教育", name: "西洋史" },
-        { dept: "共通教育", name: "現代世界の政治経済" },
-        { dept: "共通教育", name: "現代日本史" },
-        { dept: "共通教育", name: "人間関係論" },
-        { dept: "共通教育", name: "社会心理学" },
-        { dept: "共通教育", name: "国際言語文化" },
-        { dept: "共通教育", name: "外国語研修" },
-        { dept: "共通教育", name: "外国事情" },
-
-        // --- 専門基礎 ---
-        { dept: "専門基礎", name: "幾何学" },
-        { dept: "専門基礎", name: "離散数学" },
-        { dept: "専門基礎", name: "グラフ理論" },
-        { dept: "専門基礎", name: "微分方程式" },
-        { dept: "専門基礎", name: "微積分学2" },
-        { dept: "専門基礎", name: "論理数学" },
-        { dept: "専門基礎", name: "基礎数学" },
-        { dept: "専門基礎", name: "情報基礎1" },
-        { dept: "専門基礎", name: "情報技術基礎" },
-        { dept: "専門基礎", name: "物理学1" },
-        { dept: "専門基礎", name: "化学1" },
-        { dept: "専門基礎", name: "生物学1" },
-        { dept: "専門基礎", name: "微積分学1" },
-        { dept: "専門基礎", name: "線形代数" },
-        { dept: "専門基礎", name: "技術者倫理" },
-
-        // --- 教職 ---
-        { dept: "教職", name: "教職実践演習(高)" },
-        { dept: "教職", name: "教育実習" },
-        { dept: "教職", name: "教育実習指導" },
-        { dept: "教職", name: "教育相談" },
-        { dept: "教職", name: "生徒指導・進路指導論" },
-        { dept: "教職", name: "特別活動と総合的な学習の時間の指導法" },
-        { dept: "教職", name: "情報科教育法2" },
-        { dept: "教職", name: "特別支援教育論" },
-        { dept: "教職", name: "教育制度論" },
-        { dept: "教職", name: "教育の方法と技術(ICT活用を含む)" },
-        { dept: "教職", name: "情報科教育法1" },
-        { dept: "教職", name: "教育課程論" },
-        { dept: "教職", name: "教育心理学" },
-        { dept: "教職", name: "教育の理念と歴史" },
-        { dept: "教職", name: "教職論" }
+        { dept: "情報科学", name: "情報と職業" }, { dept: "情報科学", name: "情報科学演習3" }, { dept: "情報科学", name: "情報科学演習4" }, { dept: "情報科学", name: "画像情報処理" }, { dept: "情報科学", name: "情報理論" }, { dept: "情報科学", name: "情報セキュリティ" }, { dept: "情報科学", name: "量子情報科学" }, { dept: "情報科学", name: "計算機アーキテクチャ" }, { dept: "情報科学", name: "コンピュータグラフィックス" }, { dept: "情報科学", name: "オペレーティングシステム" }, { dept: "情報科学", name: "情報社会論" }, { dept: "情報科学", name: "情報システムデザイン" }, { dept: "情報科学", name: "プログラミング3" }, { dept: "情報科学", name: "プログラミング4" }, { dept: "情報科学", name: "情報科学演習1" }, { dept: "情報科学", name: "情報科学演習2" }, { dept: "情報科学", name: "Web技術" }, { dept: "情報科学", name: "コンピュータネットワーク" }, { dept: "情報科学", name: "データ構造とアルゴリズム" }, { dept: "情報科学", name: "データベース論" }, { dept: "情報科学", name: "オートマトンと計算理論" }, { dept: "情報科学", name: "プログラミング1" }, { dept: "情報科学", name: "プログラミング2" },
+        { dept: "データサイエンス", name: "オペレーションズリサーチ" }, { dept: "データサイエンス", name: "経営情報学" }, { dept: "データサイエンス", name: "管理工学概論" }, { dept: "データサイエンス", name: "人工知能の応用" }, { dept: "データサイエンス", name: "コンピュータシミュレーション" }, { dept: "データサイエンス", name: "計測工学" }, { dept: "データサイエンス", name: "人工知能の基礎" }, { dept: "データサイエンス", name: "データサイエンス応用基礎1" }, { dept: "データサイエンス", name: "データサイエンス応用基礎2" }, { dept: "データサイエンス", name: "数理統計学" }, { dept: "データサイエンス", name: "データサイエンス・AI入門" },
+        { dept: "ロボティクス", name: "自動制御" }, { dept: "ロボティクス", name: "メカトロニクス" }, { dept: "ロボティクス", name: "ロボットセンシング" }, { dept: "ロボティクス", name: "論理回路" }, { dept: "ロボティクス", name: "電子回路" }, { dept: "ロボティクス", name: "電子デバイス" }, { dept: "ロボティクス", name: "ラプラス変換・フーリエ解析" }, { dept: "ロボティクス", name: "電気回路1" }, { dept: "ロボティクス", name: "電気回路2" }, { dept: "ロボティクス", name: "電磁気学" }, { dept: "ロボティクス", name: "機械要素設計" }, { dept: "ロボティクス", name: "ロボティクス概論" },
+        { dept: "共通教育", name: "英語コミュニケーション" }, { dept: "共通教育", name: "英語3" }, { dept: "共通教育", name: "英語4" }, { dept: "共通教育", name: "法学" }, { dept: "共通教育", name: "英語1" }, { dept: "共通教育", name: "英語2" }, { dept: "共通教育", name: "スポーツ科学" }, { dept: "共通教育", name: "地理学" }, { dept: "共通教育", name: "健康支援学" }, { dept: "共通教育", name: "社会学" }, { dept: "共通教育", name: "経済学" }, { dept: "共通教育", name: "心理学" }, { dept: "共通教育", name: "西洋史" }, { dept: "共通教育", name: "現代世界の政治経済" }, { dept: "共通教育", name: "現代日本史" }, { dept: "共通教育", name: "人間関係論" }, { dept: "共通教育", name: "社会心理学" }, { dept: "共通教育", name: "国際言語文化" }, { dept: "共通教育", name: "外国語研修" }, { dept: "共通教育", name: "外国事情" },
+        { dept: "専門基礎", name: "幾何学" }, { dept: "専門基礎", name: "離散数学" }, { dept: "専門基礎", name: "グラフ理論" }, { dept: "専門基礎", name: "微分方程式" }, { dept: "専門基礎", name: "微積分学2" }, { dept: "専門基礎", name: "論理数学" }, { dept: "専門基礎", name: "基礎数学" }, { dept: "専門基礎", name: "情報基礎1" }, { dept: "専門基礎", name: "情報技術基礎" }, { dept: "専門基礎", name: "物理学1" }, { dept: "専門基礎", name: "化学1" }, { dept: "専門基礎", name: "生物学1" }, { dept: "専門基礎", name: "微積分学1" }, { dept: "専門基礎", name: "線形代数" }, { dept: "専門基礎", name: "技術者倫理" },
+        { dept: "教職", name: "教職実践演習(高)" }, { dept: "教職", name: "教育実習" }, { dept: "教職", name: "教育実習指導" }, { dept: "教職", name: "教育相談" }, { dept: "教職", name: "生徒指導・進路指導論" }, { dept: "教職", name: "特別活動と総合的な学習の時間の指導法" }, { dept: "教職", name: "情報科教育法2" }, { dept: "教職", name: "特別支援教育論" }, { dept: "教職", name: "教育制度論" }, { dept: "教職", name: "教育の方法と技術(ICT活用を含む)" }, { dept: "教職", name: "情報科教育法1" }, { dept: "教職", name: "教育課程論" }, { dept: "教職", name: "教育心理学" }, { dept: "教職", name: "教育の理念と歴史" }, { dept: "教職", name: "教職論" }
     ];
 
-    // 初期化
+    let repoFrame = null;
+
     window.onload = function() {
         updateSubjectSuggestions();
+        
+        // 🔄 Repository.htmlの読み込みを100msごとに安全に監視
+        const checkReady = setInterval(() => {
+            const iframe = document.getElementById('repo-iframe').contentWindow;
+            if (iframe && iframe.userRepo && iframe.reviewRepo) {
+                clearInterval(checkReady);
+                repoFrame = iframe;
+                
+                // 読み込み完了後にセッション確認を実施
+                checkSessionAndEnableButton();
+            }
+        }, 100);
     };
 
-    // フィルタリング処理
+    // セッションチェック & ボタン有効化関数
+    function checkSessionAndEnableButton() {
+        const currentUser = repoFrame.userRepo.getCurrentUser();
+        const btn = document.getElementById('submit-btn');
+
+        if (!currentUser) {
+            // セッションが最初から無ければ警告を出してログインへ
+            alert("ログインセッションが見つかりません。再度ログインしてください。");
+            location.href = 'login.html';
+            return;
+        }
+
+        // セッションが正常であればボタンを「投稿する」にしてアクティブ化
+        btn.innerText = "投稿する";
+        btn.disabled = false;
+        btn.style.backgroundColor = "#2c3e50";
+        btn.style.cursor = "pointer";
+    }
+
     function updateSubjectSuggestions() {
         const deptInput = document.getElementById('department').value.trim().toLowerCase();
         const datalist = document.getElementById('subject-options');
-        
         datalist.innerHTML = "";
 
         const filtered = masterSubjects.filter(item => {
@@ -189,7 +114,6 @@
         });
     }
 
-    // 投稿処理
     async function submitReview() {
         const subject = document.getElementById('subject').value.trim();
         const rating = document.getElementById('rating').value;
@@ -201,18 +125,18 @@
             return;
         }
 
-        const repoFrame = document.getElementById('repo-iframe').contentWindow;
-        if (!repoFrame || !repoFrame.userRepo) {
-            alert("システムの読み込み中です。もう一度お試しください。");
-            return;
-        }
-
+        // 念のため送信直前にも再チェック
         const currentUser = repoFrame.userRepo.getCurrentUser();
         if (!currentUser) {
-            alert("ログインセッションが切れました。再度ログインしてください。");
+            alert("セッションが切断されました。再度ログインしてください。");
             location.href = 'login.html';
             return;
         }
+
+        // ボタンの連打防止
+        const btn = document.getElementById('submit-btn');
+        btn.disabled = true;
+        btn.innerText = "送信中...";
 
         const res = await repoFrame.reviewRepo.create(currentUser.studentId, subject, rating, comment, percentage);
         
@@ -221,6 +145,8 @@
             location.href = 'view.html';
         } else {
             alert("エラーが発生しました: " + res.error);
+            btn.disabled = false;
+            btn.innerText = "投稿する";
         }
     }
     </script>
