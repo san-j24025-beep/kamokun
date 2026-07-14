@@ -3,77 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <title>ホーム - かもくん</title>
-    <style>
-        body { font-family: sans-serif; margin: 0; padding: 0; background: #f5f6fa; color: #2f3640; }
-        .container { max-width: 800px; margin: 30px auto; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .btn { display: inline-block; padding: 10px 20px; background: #3498db; color: white; text-decoration: none; border-radius: 4px; font-weight: bold; margin-top: 15px; }
-        .btn:hover { background: #2980b9; }
-    </style>
-
-    <!-- 共通ローダーシステム (他の主要画面にも同じものを設置しています) -->
+    <link rel="stylesheet" href="style.css">
     <script>
-    async function initApp() {
-        const components = ['Database.html', 'User.html', 'Review.html'];
-        for (const comp of components) {
-            const res = await fetch(comp);
-            const text = await res.text();
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(text, 'text/html');
-            const script = doc.querySelector('script');
-            if (script) {
-                const newScript = document.createElement('script');
-                newScript.textContent = script.textContent;
-                document.head.appendChild(newScript);
+        // ⚡【バグガード】もしこのページが iframe の中で開かれていたら、強制的に画面全体に引き上げる
+        if (window.top !== window.self) {
+            window.top.location.replace(window.self.location.href);
+        }
+
+        // ログイン状態の確認
+        (function() {
+            const currentUser = sessionStorage.getItem('currentUser');
+            if (!currentUser) {
+                window.top.location.replace('login.html');
             }
-        }
-        
-        // クラスのインスタンス化
-        window.db = new window.Database();
-        window.userRepo = new window.User(window.db);
-        window.reviewRepo = new window.Review(window.db);
-        
-        // ログインチェックとヘッダー・フッターの自動埋め込み
-        if (!window.userRepo.isLoggedIn()) {
-            location.href = 'login.html';
-            return;
-        }
-        
-        const headerRes = await fetch('header.html');
-        if (headerRes.ok) document.getElementById('header-layout').innerHTML = await headerRes.text();
-        
-        const footerRes = await fetch('footer.html');
-        if (footerRes.ok) document.getElementById('footer-layout').innerHTML = await footerRes.text();
-        
-        // ページ個別の初期化処理へ
-        if (typeof onAppReady === 'function') onAppReady();
-    }
-    document.addEventListener('DOMContentLoaded', initApp);
+        })();
     </script>
 </head>
 <body>
-    <!-- ヘッダー挿入用エリア -->
-    <div id="header-layout"></div>
-    
-    <div class="container">
-        <h2>ようこそ、<span id="username-display">ゲスト</span> さん</h2>
-        <p>「かもくん」は、科目のレビューやレポート状況をみんなで共有・管理するアプリです。</p>
-        <div style="margin-top: 20px;">
-            <a href="view.html" class="btn">レビュー一覧を見る</a>
-            <a href="report.html" class="btn" style="background:#2ecc71;">新しいレビューを書く</a>
+
+    <!-- 共通ヘッダーの埋め込み（もしiframeで呼ぶ構成の場合も、これでリンクが安全化されます） -->
+    <iframe src="header.html" style="width: 100%; border: none; height: 70px; scrollbar-width: none;" id="header-frame"></iframe>
+
+    <div class="container" style="max-width: 800px; margin: 40px auto; padding: 20px;">
+        <h1 style="color: #1a202c; text-align: center;">かもくんへようこそ！</h1>
+        <p style="text-align: center; color: #4a5568; font-size: 16px; margin-bottom: 40px;">
+            講義のリアルなレビューを共有・確認できるプラットフォームです。
+        </p>
+
+        <div style="display: flex; gap: 20px; justify-content: center;">
+            <button onclick="goToPage('view.html')" style="background: #4a00e0; color: white; padding: 15px 30px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; flex: 1; max-width: 250px;">
+                🔍 レビューを見る
+            </button>
+            <button onclick="goToPage('report.html')" style="background: #ffffff; color: #4a00e0; border: 2px solid #4a00e0; padding: 15px 30px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; flex: 1; max-width: 250px;">
+                ✍️ レビューを書く
+            </button>
         </div>
     </div>
 
-    <!-- フッター挿入用エリア -->
-    <div id="footer-layout"></div>
-
     <script>
-    // クラスが読み込み終わったら呼び出される関数
-    function onAppReady() {
-        const currentUser = window.userRepo.getCurrentUser();
-        if (currentUser) {
-            document.getElementById('username-display').innerText = currentUser.studentId + " (" + currentUser.grade + "年)";
+        function goToPage(page) {
+            // ⚡ ボタンクリック時も必ず最上階（画面全体）を遷移させる
+            window.top.location.href = page;
         }
-    }
     </script>
 </body>
 </html>
