@@ -1,16 +1,14 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html>
 <head>
     <meta charset="UTF-8">
     <title>ログアウト - かもくん</title>
-    <!-- [ここにindex.htmlと同じ共通ローダーの<script>〜</script>を入れてください] -->
 </head>
 <body>
-    <p style="text-align:center; margin-top:50px; font-family:sans-serif;">ログアウト処理中...</p>
+    <script src="auth.js"></script>
     <script>
-    function onAppReady() {
-        window.userRepo.logout();
-    }
+        clearAuth();
+        window.top.location.replace('login.html');
     </script>
 </body>
 </html>

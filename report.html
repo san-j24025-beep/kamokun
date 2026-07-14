@@ -1,154 +1,155 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>レビューを投稿する - かもくん</title>
+    <title>講義レビューの投稿 - かもくん</title>
     <link rel="stylesheet" href="style.css">
+    <script src="auth.js"></script>
+    <script>
+        (function() {
+            if (!requireAuth()) {
+                return;
+            }
+        })();
+    </script>
+    <style>
+        /* ヘッダー直貼りデザイン */
+        .direct-header {
+            background: #1a202c;
+            padding: 15px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid #4a00e0;
+        }
+        .logo {
+            color: #ffffff;
+            font-size: 20px;
+            font-weight: bold;
+            text-decoration: none;
+        }
+        .nav-menu {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        .nav-link {
+            color: #cbd5e0;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 15px;
+            transition: color 0.2s;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #9f7aea;
+        }
+        .btn-logout {
+            background: #e53e3e;
+            color: white;
+            border: none;
+            padding: 6px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        /* 投稿フォーム専用スタイル */
+        .form-container {
+            max-width: 600px;
+            margin: 40px auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #2d3748;
+        }
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e0;
+            border-radius: 8px;
+            font-size: 15px;
+            box-sizing: border-box;
+            background-color: #f8fafc;
+        }
+        .btn-submit {
+            background: #4a00e0;
+            color: white;
+            border: none;
+            padding: 14px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            width: 100%;
+        }
+    </style>
 </head>
 <body>
-    <iframe src="header.html" style="width:100%; border:none; height:60px; display:block;"></iframe>
 
-    <div class="container">
-        <h2>講義レビューの投稿</h2>
-        
-        <div class="form-group">
-            <label for="department">分野・系列（候補を絞り込む）</label>
-            <input type="text" id="department" placeholder="例: 情報科学、データ、ロボ、共通、専門基礎、教職（空欄で全表示）" oninput="updateSubjectSuggestions()">
-        </div>
+    <!-- ⚡ 各ページ直貼りヘッダー -->
+    <header class="direct-header">
+        <a href="index.html" class="logo">かもくん</a>
+        <nav class="nav-menu">
+            <a href="index.html" class="nav-link">メニュー選択</a>
+            <a href="view.html" class="nav-link">レビュー一覧</a>
+            <a href="report.html" class="nav-link active">レビュー投稿</a>
+            <button class="btn-logout" onclick="logout()">ログアウト</button>
+        </nav>
+    </header>
 
-        <div class="form-group">
-            <label for="subject">科目名</label>
-            <input type="text" id="subject" list="subject-options" placeholder="分野名を入れるか、直接入力・選択してください">
-            <datalist id="subject-options"></datalist>
-        </div>
-
-        <div class="form-group">
-            <label for="rating">おすすめ度</label>
-            <select id="rating">
-                <option value="5">★★★★★ (非常におすすめ)</option>
-                <option value="4">★★★★☆ (おすすめ)</option>
-                <option value="3">★★★☆☆ (普通)</option>
-                <option value="2">★★☆☆☆ (やや厳しい)</option>
-                <option value="1">★☆☆☆☆ (単位取得が非常に困難)</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label for="percentage">小テスト・レポートの割合 (%)</label>
-            <input type="number" id="percentage" placeholder="例: 30" min="0" max="100">
-        </div>
-
-        <div class="form-group">
-            <label for="comment">感想・アドバイス</label>
-            <textarea id="comment" rows="5" placeholder="テストの傾向や、出席の重要さなどを自由に書いてください"></textarea>
-        </div>
-
-        <!-- 初期状態は無効化（disabled）しておき、システム準備完了で有効化します -->
-        <button id="submit-btn" onclick="submitReview()" disabled style="background-color: #7f8c8d; cursor: not-allowed;">システム読み込み中...</button>
+    <div class="form-container">
+        <h2 style="text-align: center; margin-bottom: 25px; color: #1a202c;">講義レビューの投稿</h2>
+        <form id="review-form" onsubmit="submitReview(event)">
+            <!-- 分野 -->
+            <div class="form-group">
+                <label for="category">分野・系列</label>
+                <input type="text" id="category" class="form-control" placeholder="例: 情報科学">
+            </div>
+            <!-- 科目名 -->
+            <div class="form-group">
+                <label for="subject">科目名</label>
+                <input type="text" id="subject" class="form-control" placeholder="科目名を入力してください" required>
+            </div>
+            <!-- おすすめ度 -->
+            <div class="form-group">
+                <label for="rating">おすすめ度</label>
+                <select id="rating" class="form-control">
+                    <option value="5">★★★★★ (非常におすすめ)</option>
+                    <option value="4">★★★★☆ (おすすめ)</option>
+                    <option value="3">★★★☆☆ (普通)</option>
+                    <option value="2">★★☆☆☆ (あまりおすすめしない)</option>
+                    <option value="1">★☆☆☆☆ (おすすめしない)</option>
+                </select>
+            </div>
+            <!-- 感想 -->
+            <div class="form-group">
+                <label for="comment">感想・アドバイス</label>
+                <textarea id="comment" class="form-control" style="min-height: 120px;" placeholder="テストの傾向や、出席の重要さなどを自由に書いてください" required></textarea>
+            </div>
+            <button type="submit" class="btn-submit">レビューを投稿する</button>
+        </form>
     </div>
 
-    <iframe src="Repository.html" id="repo-iframe" style="display:none;"></iframe>
-
     <script>
-    // 全59科目のマスタデータ
-    const masterSubjects = [
-        { dept: "情報科学", name: "情報と職業" }, { dept: "情報科学", name: "情報科学演習3" }, { dept: "情報科学", name: "情報科学演習4" }, { dept: "情報科学", name: "画像情報処理" }, { dept: "情報科学", name: "情報理論" }, { dept: "情報科学", name: "情報セキュリティ" }, { dept: "情報科学", name: "量子情報科学" }, { dept: "情報科学", name: "計算機アーキテクチャ" }, { dept: "情報科学", name: "コンピュータグラフィックス" }, { dept: "情報科学", name: "オペレーティングシステム" }, { dept: "情報科学", name: "情報社会論" }, { dept: "情報科学", name: "情報システムデザイン" }, { dept: "情報科学", name: "プログラミング3" }, { dept: "情報科学", name: "プログラミング4" }, { dept: "情報科学", name: "情報科学演習1" }, { dept: "情報科学", name: "情報科学演習2" }, { dept: "情報科学", name: "Web技術" }, { dept: "情報科学", name: "コンピュータネットワーク" }, { dept: "情報科学", name: "データ構造とアルゴリズム" }, { dept: "情報科学", name: "データベース論" }, { dept: "情報科学", name: "オートマトンと計算理論" }, { dept: "情報科学", name: "プログラミング1" }, { dept: "情報科学", name: "プログラミング2" },
-        { dept: "データサイエンス", name: "オペレーションズリサーチ" }, { dept: "データサイエンス", name: "経営情報学" }, { dept: "データサイエンス", name: "管理工学概論" }, { dept: "データサイエンス", name: "人工知能の応用" }, { dept: "データサイエンス", name: "コンピュータシミュレーション" }, { dept: "データサイエンス", name: "計測工学" }, { dept: "データサイエンス", name: "人工知能の基礎" }, { dept: "データサイエンス", name: "データサイエンス応用基礎1" }, { dept: "データサイエンス", name: "データサイエンス応用基礎2" }, { dept: "データサイエンス", name: "数理統計学" }, { dept: "データサイエンス", name: "データサイエンス・AI入門" },
-        { dept: "ロボティクス", name: "自動制御" }, { dept: "ロボティクス", name: "メカトロニクス" }, { dept: "ロボティクス", name: "ロボットセンシング" }, { dept: "ロボティクス", name: "論理回路" }, { dept: "ロボティクス", name: "電子回路" }, { dept: "ロボティクス", name: "電子デバイス" }, { dept: "ロボティクス", name: "ラプラス変換・フーリエ解析" }, { dept: "ロボティクス", name: "電気回路1" }, { dept: "ロボティクス", name: "電気回路2" }, { dept: "ロボティクス", name: "電磁気学" }, { dept: "ロボティクス", name: "機械要素設計" }, { dept: "ロボティクス", name: "ロボティクス概論" },
-        { dept: "共通教育", name: "英語コミュニケーション" }, { dept: "共通教育", name: "英語3" }, { dept: "共通教育", name: "英語4" }, { dept: "共通教育", name: "法学" }, { dept: "共通教育", name: "英語1" }, { dept: "共通教育", name: "英語2" }, { dept: "共通教育", name: "スポーツ科学" }, { dept: "共通教育", name: "地理学" }, { dept: "共通教育", name: "健康支援学" }, { dept: "共通教育", name: "社会学" }, { dept: "共通教育", name: "経済学" }, { dept: "共通教育", name: "心理学" }, { dept: "共通教育", name: "西洋史" }, { dept: "共通教育", name: "現代世界の政治経済" }, { dept: "共通教育", name: "現代日本史" }, { dept: "共通教育", name: "人間関係論" }, { dept: "共通教育", name: "社会心理学" }, { dept: "共通教育", name: "国際言語文化" }, { dept: "共通教育", name: "外国語研修" }, { dept: "共通教育", name: "外国事情" },
-        { dept: "専門基礎", name: "幾何学" }, { dept: "専門基礎", name: "離散数学" }, { dept: "専門基礎", name: "グラフ理論" }, { dept: "専門基礎", name: "微分方程式" }, { dept: "専門基礎", name: "微積分学2" }, { dept: "専門基礎", name: "論理数学" }, { dept: "専門基礎", name: "基礎数学" }, { dept: "専門基礎", name: "情報基礎1" }, { dept: "専門基礎", name: "情報技術基礎" }, { dept: "専門基礎", name: "物理学1" }, { dept: "専門基礎", name: "化学1" }, { dept: "専門基礎", name: "生物学1" }, { dept: "専門基礎", name: "微積分学1" }, { dept: "専門基礎", name: "線形代数" }, { dept: "専門基礎", name: "技術者倫理" },
-        { dept: "教職", name: "教職実践演習(高)" }, { dept: "教職", name: "教育実習" }, { dept: "教職", name: "教育実習指導" }, { dept: "教職", name: "教育相談" }, { dept: "教職", name: "生徒指導・進路指導論" }, { dept: "教職", name: "特別活動と総合的な学習の時間の指導法" }, { dept: "教職", name: "情報科教育法2" }, { dept: "教職", name: "特別支援教育論" }, { dept: "教職", name: "教育制度論" }, { dept: "教職", name: "教育の方法と技術(ICT活用を含む)" }, { dept: "教職", name: "情報科教育法1" }, { dept: "教職", name: "教育課程論" }, { dept: "教職", name: "教育心理学" }, { dept: "教職", name: "教育の理念と歴史" }, { dept: "教職", name: "教職論" }
-    ];
-
-    let repoFrame = null;
-
-    window.onload = function() {
-        updateSubjectSuggestions();
-        
-        // 🔄 Repository.htmlの読み込みを100msごとに安全に監視
-        const checkReady = setInterval(() => {
-            const iframe = document.getElementById('repo-iframe').contentWindow;
-            if (iframe && iframe.userRepo && iframe.reviewRepo) {
-                clearInterval(checkReady);
-                repoFrame = iframe;
-                
-                // 読み込み完了後にセッション確認を実施
-                checkSessionAndEnableButton();
-            }
-        }, 100);
-    };
-
-    // セッションチェック & ボタン有効化関数
-    function checkSessionAndEnableButton() {
-        const currentUser = repoFrame.userRepo.getCurrentUser();
-        const btn = document.getElementById('submit-btn');
-
-        if (!currentUser) {
-            // セッションが最初から無ければ警告を出してログインへ
-            alert("ログインセッションが見つかりません。再度ログインしてください。");
-            location.href = 'login.html';
-            return;
+        function logout() {
+            window.location.replace('logout.html');
         }
 
-        // セッションが正常であればボタンを「投稿する」にしてアクティブ化
-        btn.innerText = "投稿する";
-        btn.disabled = false;
-        btn.style.backgroundColor = "#2c3e50";
-        btn.style.cursor = "pointer";
-    }
-
-    function updateSubjectSuggestions() {
-        const deptInput = document.getElementById('department').value.trim().toLowerCase();
-        const datalist = document.getElementById('subject-options');
-        datalist.innerHTML = "";
-
-        const filtered = masterSubjects.filter(item => {
-            return deptInput === "" || item.dept.toLowerCase().includes(deptInput) || item.name.toLowerCase().includes(deptInput);
-        });
-
-        filtered.forEach(item => {
-            const option = document.createElement('option');
-            option.value = item.name;
-            option.textContent = `[${item.dept}]`;
-            datalist.appendChild(option);
-        });
-    }
-
-    async function submitReview() {
-        const subject = document.getElementById('subject').value.trim();
-        const rating = document.getElementById('rating').value;
-        const comment = document.getElementById('comment').value.trim();
-        const percentage = document.getElementById('percentage').value.trim();
-        
-        if (!subject || !comment) {
-            alert("科目名と感想は必須項目です。");
-            return;
+        function submitReview(event) {
+            event.preventDefault();
+            alert("投稿が完了しました！（一覧へ遷移します）");
+            window.location.href = 'view.html';
         }
-
-        // 念のため送信直前にも再チェック
-        const currentUser = repoFrame.userRepo.getCurrentUser();
-        if (!currentUser) {
-            alert("セッションが切断されました。再度ログインしてください。");
-            location.href = 'login.html';
-            return;
-        }
-
-        // ボタンの連打防止
-        const btn = document.getElementById('submit-btn');
-        btn.disabled = true;
-        btn.innerText = "送信中...";
-
-        const res = await repoFrame.reviewRepo.create(currentUser.studentId, subject, rating, comment, percentage);
-        
-        if (res.success) {
-            alert("投稿が完了しました！");
-            location.href = 'view.html';
-        } else {
-            alert("エラーが発生しました: " + res.error);
-            btn.disabled = false;
-            btn.innerText = "投稿する";
-        }
-    }
     </script>
 </body>
 </html>

@@ -4,12 +4,11 @@
     <meta charset="UTF-8">
     <title>メニュー選択 - かもくん</title>
     <link rel="stylesheet" href="style.css">
+    <script src="auth.js"></script>
     <script>
-        // ログインチェック（未ログインなら強制リダイレクト）
         (function() {
-            const currentUser = sessionStorage.getItem('currentUser');
-            if (!currentUser) {
-                window.location.replace('login.html');
+            if (!requireAuth()) {
+                return;
             }
         })();
     </script>

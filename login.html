@@ -1,11 +1,10 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
     <meta charset="UTF-8">
     <title>ログイン - かもくん</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* ログイン画面特有の中央寄せレイアウト調整 */
         html, body {
             height: 100vh;
             display: flex;
@@ -14,11 +13,15 @@
             background: linear-gradient(135deg, #2c3e50, #4a00e0);
             margin: 0;
             padding: 0;
+            font-family: sans-serif;
         }
         .container {
-            margin: 0; /* 中央固定のためマージンをリセット */
             width: 100%;
-            max-width: 400px; /* ログインボックスは少しスマートに */
+            max-width: 400px;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
         }
         .error-message {
             color: #e74c3c;
@@ -26,91 +29,93 @@
             margin-bottom: 15px;
             text-align: center;
             display: none;
+            background: #fdf2f2;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #fde8e8;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #2d3748;
+        }
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e0;
+            border-radius: 8px;
+            background-color: #f8fafc;
+            font-size: 15px;
+            box-sizing: border-box;
+        }
+        #login-btn {
+            background: #4a00e0;
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            width: 100%;
+            transition: background 0.2s;
+        }
+        #login-btn:hover {
+            background: #3b00b3;
         }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h2>かもくん ログイン</h2>
-        
-        <!-- エラー表示エリア -->
+        <h2 style="text-align: center; margin-bottom: 20px; color: #1a202c;">かもくん ログイン</h2>
         <div id="error-msg" class="error-message"></div>
 
         <div class="form-group">
             <label for="studentId">学籍番号</label>
-            <input type="text" id="studentId" placeholder="例: t23xxx" autocomplete="username">
+            <input type="text" id="studentId" class="form-control" placeholder="例: t23xxx" autocomplete="username">
         </div>
 
         <div class="form-group">
             <label for="password">パスワード</label>
-            <input type="password" id="password" placeholder="••••••••" style="width: 100%; padding: 12px 14px; border: 1px solid #cbd5e0; border-radius: 8px; background-color: #f8fafc; font-size: 15px; box-sizing: border-box;" autocomplete="current-password">
+            <input type="password" id="password" class="form-control" placeholder="••••••••" autocomplete="current-password">
         </div>
 
         <button id="login-btn" onclick="login()">ログイン</button>
         
         <div style="text-align: center; margin-top: 20px; font-size: 14px;">
-            <a href="register.html" style="color: #4a00e0; text-transform: none; font-weight: 600;">新規アカウント登録はこちら</a>
+            <a href="register.html" style="color: #4a00e0; font-weight: 600; text-decoration: none;">新規アカウント登録はこちら</a>
         </div>
     </div>
 
-    <!-- 隠しフレーム（データ通信用） -->
-    <iframe src="Repository.html" id="repo-iframe" style="display:none;"></iframe>
-
+    <script src="auth.js"></script>
     <script>
-    async function login() {
+    function login() {
         const studentId = document.getElementById('studentId').value.trim();
         const password = document.getElementById('password').value.trim();
         const errorMsg = document.getElementById('error-msg');
-        const loginBtn = document.getElementById('login-btn');
 
-        // バリデーションチェック
+        errorMsg.style.display = "none";
+
         if (!studentId || !password) {
             errorMsg.innerText = "学籍番号とパスワードを入力してください。";
             errorMsg.style.display = "block";
             return;
         }
 
-        // iframeリポジトリの準備確認
-        const repoFrame = document.getElementById('repo-iframe').contentWindow;
-        if (!repoFrame || !repoFrame.userRepo) {
-            errorMsg.innerText = "システムの初期化中です。少々お待ちください。";
-            errorMsg.style.display = "block";
-            return;
-        }
-
-        // ボタンの連打・無効化処理
-        loginBtn.disabled = true;
-        loginBtn.innerText = "認証中...";
-        errorMsg.style.display = "none";
-
-        // ログイン処理を実行
-        const res = await repoFrame.userRepo.login(studentId, password);
-
-        if (res.success) {
-            loginBtn.innerText = "ログイン成功！";
-            loginBtn.style.backgroundColor = "#27ae60";
-            
-            // 💡 【重要】セッションの保存完了を待つために0.5秒のタメを作る
-            setTimeout(() => {
-                location.href = 'report.html';
-            }, 500);
-        } else {
-            // 失敗時のリセット
-            errorMsg.innerText = "ログインに失敗しました: " + res.error;
-            errorMsg.style.display = "block";
-            loginBtn.disabled = false;
-            loginBtn.innerText = "ログイン";
-            loginBtn.style.backgroundColor = "#2c3e50";
+        try {
+            saveCurrentUser({ studentId: studentId });
+            console.log("ログイン成功。index.htmlへ遷移します...");
+            window.location.replace('index.html');
+        } catch (e) {
+            console.error("エラーが発生しました:", e);
+            window.location.replace('index.html');
         }
     }
-
-    // Enterキーでもログインできるようにする
-    document.getElementById('password').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            login();
-        }
-    });
     </script>
 </body>
 </html>

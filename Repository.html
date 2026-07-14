@@ -1,60 +1,74 @@
 <!DOCTYPE html>
 <html>
-<head><meta charset="UTF-8"></head>
+<head>
+    <meta charset="UTF-8">
+    <title>Repository - かもくん</title>
+</head>
 <body>
-<!-- 依存関係としてDatabase.htmlを先に読み込みます -->
-<iframe src="Database.html" id="db-iframe" style="display:none;"></iframe>
+    <script style="display: none;">
+        // クラス定義：ユーザーリポジトリ
+        class UserRepository {
+            constructor() {
+                // セッションストレージからログイン中のユーザーを復元
+                const savedUser = sessionStorage.getItem('currentUser');
+                this.currentUser = savedUser ? JSON.parse(savedUser) : null;
+            }
 
-<script>
-class UserRepository {
-    getCurrentUser() {
-        const userJson = localStorage.getItem('kamokun_user');
-        return userJson ? JSON.parse(userJson) : null;
-    }
+            // ログイン処理
+            async login(studentId, password) {
+                // データベース画面（Database.html）から登録ユーザー一覧を取得
+                const dbFrame = window.parent.document.getElementById('db-iframe') || 
+                                document.getElementById('db-iframe');
+                
+                let users = [];
+                if (dbFrame && dbFrame.contentWindow && dbFrame.contentWindow.db) {
+                    users = dbFrame.contentWindow.db.users || [];
+                } else {
+                    // 親画面や別ルートからDatabaseのグローバルオブジェクトを探す
+                    const globalDb = window.parent.db || window.db;
+                    if (globalDb) users = globalDb.users || [];
+                }
 
-    setCurrentUser(user) {
-        localStorage.setItem('kamokun_user', JSON.stringify(user));
-    }
+                // ユーザーの照合
+                const user = users.find(u => u.studentId === studentId && u.password === password);
 
-    clear() {
-        localStorage.removeItem('kamokun_user');
-    }
+                if (user) {
+                    this.currentUser = user;
+                    // 💡 重要：ブラウザのセッションに保存して別画面でも使い回せるようにする
+                    sessionStorage.setItem('currentUser', JSON.stringify(user));
+                    return { success: true, user: user };
+                } else {
+                    return { success: false, error: "学籍番号またはパスワードが間違っています。" };
+                }
+            }
 
-    async login(studentId, grade) {
-        const dbFrame = document.getElementById('db-iframe').contentWindow;
-        const db = new dbFrame.Database();
-        const res = await db.request('login', { studentId, grade });
-        if (res.success) {
-            this.setCurrentUser(res.user);
+            // ログアウト処理
+            logout() {
+                this.currentUser = null;
+                sessionStorage.removeItem('currentUser');
+            }
+
+            // 現在のログインユーザーを取得する関数
+            getCurrentUser() {
+                if (!this.currentUser) {
+                    const savedUser = sessionStorage.getItem('currentUser');
+                    if (savedUser) {
+                        this.currentUser = JSON.parse(savedUser);
+                    }
+                }
+                return this.currentUser;
+            }
         }
-        return res;
-    }
-}
 
-class ReviewRepository {
-    async getAll() {
-        const dbFrame = document.getElementById('db-iframe').contentWindow;
-        const db = new dbFrame.Database();
-        return await db.request('getReviews');
-    }
-
-    // 新しい引数 percentage (小テスト・レポート割合) に完全対応
-    async create(studentId, subject, rating, comment, percentage) {
-        const dbFrame = document.getElementById('db-iframe').contentWindow;
-        const db = new dbFrame.Database();
-        return await db.request('createReview', { 
-            studentId, 
-            subject, 
-            rating: parseInt(rating, 10), 
-            comment,
-            percentage: percentage !== "" ? parseInt(percentage, 10) : 0
-        });
-    }
-}
-
-// グローバルにインスタンスを展開
-window.userRepo = new UserRepository();
-window.reviewRepo = new ReviewRepository();
-</script>
+        // インスタンス化して他画面から呼べるようにする
+        window.userRepo = new UserRepository();
+        // 親画面のグローバル領域にも念のため参照を貼る（どの画面からでも呼び出せるように）
+        if (window.parent) {
+            window.parent.userRepo = window.userRepo;
+        }
+    </script>
+    
+    <!-- データベースとの通信用iframe（もしあれば連動） -->
+    <iframe src="Database.html" id="db-iframe" style="display:none;"></iframe>
 </body>
 </html>

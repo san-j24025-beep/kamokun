@@ -1,93 +1,232 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>レビューを見る - かもくん</title>
+    <title>レビュー一覧 - かもくん</title>
     <link rel="stylesheet" href="style.css">
+    <script src="auth.js"></script>
+    <script>
+        (function() {
+            if (!requireAuth()) {
+                return;
+            }
+        })();
+    </script>
+    <style>
+        /* ヘッダー直貼りデザイン */
+        .direct-header {
+            background: #1a202c;
+            padding: 15px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid #4a00e0;
+        }
+        .logo {
+            color: #ffffff;
+            font-size: 20px;
+            font-weight: bold;
+            text-decoration: none;
+        }
+        .nav-menu {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        .nav-link {
+            color: #cbd5e0;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 15px;
+            transition: color 0.2s;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #9f7aea;
+        }
+        .btn-logout {
+            background: #e53e3e;
+            color: white;
+            border: none;
+            padding: 6px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        /* レビューカードデザイン */
+        .review-card {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+        }
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            color: #718096;
+            font-size: 14px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #f7fafc;
+            padding-bottom: 8px;
+        }
+        .review-body {
+            font-size: 16px;
+            color: #2d3748;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        .action-area {
+            display: flex;
+            gap: 15px;
+            border-top: 1px solid #edf2f7;
+            padding-top: 12px;
+            margin-bottom: 15px;
+        }
+        .like-btn {
+            background: #fff;
+            color: #e53e3e;
+            border: 1px solid #fed7d7;
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .like-btn:hover {
+            background: #fff5f5;
+            transform: scale(1.05);
+        }
+        .comment-section {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 10px;
+        }
+        .comment-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 10px 0;
+        }
+        .comment-item {
+            font-size: 14px;
+            color: #4a5568;
+            padding: 6px 0;
+            border-bottom: 1px dashed #e2e8f0;
+        }
+        .comment-item:last-child {
+            border-bottom: none;
+        }
+        .comment-user {
+            font-weight: bold;
+            color: #4a00e0;
+            margin-right: 6px;
+        }
+        .comment-form {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .comment-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .comment-submit {
+            background: #4a00e0;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+        }
+    </style>
 </head>
 <body>
-    <iframe src="header.html" style="width:100%; border:none; height:60px; display:block;"></iframe>
 
-    <div class="container">
-        <h2>講義レビュー一覧</h2>
+    <!-- ⚡ 各ページ直貼りヘッダー -->
+    <header class="direct-header">
+        <a href="index.html" class="logo">かもくん</a>
+        <nav class="nav-menu">
+            <a href="index.html" class="nav-link">メニュー選択</a>
+            <a href="view.html" class="nav-link active">レビュー一覧</a>
+            <a href="report.html" class="nav-link">レビュー投稿</a>
+            <button class="btn-logout" onclick="logout()">ログアウト</button>
+        </nav>
+    </header>
+
+    <div class="container" style="max-width: 800px; margin: 40px auto; padding: 20px;">
+        <h2>みんなのレビュー一覧</h2>
         
-        <!-- 洗練された並び替えボックス -->
-        <div class="sort-box">
-            <label for="sortOrder">並び替え</label>
-            <select id="sortOrder" onchange="renderReviews()">
-                <option value="frequency">重複が多い順 (デフォルト)</option>
-                <option value="rating">おすすめ度順</option>
-                <option value="newest">新しい順</option>
-            </select>
+        <div id="reviews-container">
+            <!-- 読み込み中のダミー表示 -->
+            <div class="review-card">
+                <div class="review-header">
+                    <span>投稿者: t23xxx</span>
+                    <span>2026/07/14</span>
+                </div>
+                <div class="review-body">
+                    Webプログラミング演習の課題、難しかったけど楽しかったです！
+                </div>
+                <div class="action-area">
+                    <button class="like-btn" onclick="addLike(this)">❤️ いいね！ <span class="like-count">3</span></button>
+                </div>
+                <div class="comment-section">
+                    <ul class="comment-list" id="comments-1">
+                        <li class="comment-item"><span class="comment-user">t23abc:</span>それな！めちゃめちゃ苦戦しました。</li>
+                    </ul>
+                    <div class="comment-form">
+                        <input type="text" class="comment-input" placeholder="コメントを入力..." id="input-1">
+                        <button class="comment-submit" onclick="postComment(1)">送信</button>
+                    </div>
+                </div>
+            </div>
         </div>
-
-        <div id="reviews-list" style="color: #718096; text-align: center; padding: 20px;">データを読み込み中...</div>
     </div>
 
-    <iframe src="Repository.html" id="repo-iframe" style="display:none;"></iframe>
-
     <script>
-    let allReviews = [];
+        const currentUser = getStoredUser() || { studentId: 'ゲスト' };
 
-    window.onload = function() {
-        const checkReady = setInterval(() => {
-            const repoFrame = document.getElementById('repo-iframe').contentWindow;
-            if (repoFrame && repoFrame.reviewRepo) {
-                clearInterval(checkReady);
-                loadReviews(repoFrame.reviewRepo);
-            }
-        }, 100);
-    };
-
-    async function loadReviews(reviewRepo) {
-        const res = await reviewRepo.getAll();
-        if (res.success) {
-            allReviews = res.data;
-            renderReviews();
-        } else {
-            document.getElementById('reviews-list').innerText = "データの取得に失敗しました: " + res.error;
-        }
-    }
-
-    function renderReviews() {
-        const listDiv = document.getElementById('reviews-list');
-        const sortBy = document.getElementById('sortOrder').value;
-        let data = [...allReviews];
-
-        if (data.length === 0) {
-            listDiv.innerHTML = '<div style="text-align:center; padding:30px; color:#a0aec0;">まだレビューがありません。最初のレビューを投稿してみましょう！</div>';
-            return;
+        function logout() {
+            window.location.replace('logout.html');
         }
 
-        if (sortBy === 'newest') {
-            data.sort((a, b) => b.timestamp - a.timestamp);
-        } else if (sortBy === 'rating') {
-            data.sort((a, b) => b.rating - a.rating);
-        } else {
-            const counts = {};
-            data.forEach(item => counts[item.subject] = (counts[item.subject] || 0) + 1);
-            data.sort((a, b) => counts[b.subject] - counts[a.subject]);
+        function addLike(button) {
+            const countSpan = button.querySelector('.like-count');
+            let currentLikes = parseInt(countSpan.innerText);
+            currentLikes += 1;
+            countSpan.innerText = currentLikes;
+            button.style.transform = 'scale(1.2)';
+            setTimeout(() => button.style.transform = 'scale(1)', 150);
         }
 
-        listDiv.innerHTML = "";
-        data.forEach(item => {
-            const stars = "★".repeat(item.rating) + "☆".repeat(5 - item.rating);
-            const card = document.createElement('div');
-            card.className = "card";
-            card.innerHTML = `
-                <div class="card-header">
-                    <div>
-                        <span class="subject-name">${item.subject}</span>
-                        <span class="percentage-badge">レポート等: ${item.percentage}%</span>
-                    </div>
-                    <div class="rating">${stars}</div>
-                </div>
-                <div class="comment">${item.comment}</div>
-                <div class="card-footer">投稿者ID: ${item.studentId}</div>
-            `;
-            listDiv.appendChild(card);
-        });
-    }
+        function postComment(id) {
+            const input = document.getElementById(`input-${id}`);
+            const commentText = input.value.trim();
+            if (!commentText) return;
+
+            const commentList = document.getElementById(`comments-${id}`);
+            const li = document.createElement('li');
+            li.className = 'comment-item';
+            li.innerHTML = `<span class="comment-user">${currentUser.studentId}:</span>${escapeHTML(commentText)}`;
+            commentList.appendChild(li);
+            input.value = '';
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+            );
+        }
     </script>
 </body>
 </html>
