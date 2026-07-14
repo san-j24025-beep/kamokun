@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>新規アカウント登録 - かもくん</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* 新規登録画面特有の中央寄せレイアウト調整 */
+        html, body {
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #2c3e50, #4a00e0);
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            margin: 0;
+            width: 100%;
+            max-width: 400px;
+        }
+        .error-message {
+            color: #e74c3c;
+            font-size: 14px;
+            margin-bottom: 15px;
+            text-align: center;
+            display: none;
+        }
+        .success-message {
+            color: #27ae60;
+            font-size: 14px;
+            margin-bottom: 15px;
+            text-align: center;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>アカウント作成</h2>
+        
+        <!-- メッセージ表示エリア -->
+        <div id="error-msg" class="error-message"></div>
+        <div id="success-msg" class="success-message"></div>
+
+        <div class="form-group">
+            <label for="studentId">学籍番号</label>
+            <input type="text" id="studentId" placeholder="例: t23xxx" autocomplete="username">
+        </div>
+
+        <div class="form-group">
+            <label for="password">パスワード</label>
+            <input type="password" id="password" placeholder="••••••••" style="width: 100%; padding: 12px 14px; border: 1px solid #cbd5e0; border-radius: 8px; background-color: #f8fafc; font-size: 15px; box-sizing: border-box;" autocomplete="new-password">
+        </div>
+
+        <div class="form-group">
+            <label for="confirmPassword">パスワード（確認用）</label>
+            <input type="password" id="confirmPassword" placeholder="••••••••" style="width: 100%; padding: 12px 14px; border: 1px solid #cbd5e0; border-radius: 8px; background-color: #f8fafc; font-size: 15px; box-sizing: border-box;" autocomplete="new-password">
+        </div>
+
+        <button id="register-btn" onclick="register()">アカウントを登録する</button>
+        
+        <div style="text-align: center; margin-top: 20px; font-size: 14px;">
+            <a href="login.html" style="color: #4a00e0; text-transform: none; font-weight: 600;">ログイン画面へ戻る</a>
+        </div>
+    </div>
+
+    <!-- 隠しフレーム（データ保存先・Database.htmlなどへの連携用ハブ） -->
+    <iframe src="Repository.html" id="repo-iframe" style="display:none;"></iframe>
+
+    <script>
+    async function register() {
+        const studentId = document.getElementById('studentId').value.trim();
+        const password = document.getElementById('password').value.trim();
+        const confirmPassword = document.getElementById('confirmPassword').value.trim();
+        
+        const errorMsg = document.getElementById('error-msg');
+        const successMsg = document.getElementById('success-msg');
+        const registerBtn = document.getElementById('register-btn');
+
+        // エラー表示を初期リセット
+        errorMsg.style.display = "none";
+        successMsg.style.display = "none";
+
+        // 1. バリデーションチェック
+        if (!studentId || !password || !confirmPassword) {
+            errorMsg.innerText = "すべての項目を入力してください。";
+            errorMsg.style.display = "block";
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            errorMsg.innerText = "パスワードと確認用パスワードが一致しません。";
+            errorMsg.style.display = "block";
+            return;
+        }
+
+        // 2. iframeリポジトリの準備確認
+        const repoFrame = document.getElementById('repo-iframe').contentWindow;
+        if (!repoFrame || !repoFrame.userRepo) {
+            // 親画面のグローバルから探す（フォールバック）
+            if (window.parent && window.parent.db) {
+                // 直接登録ロジックへ
+            } else {
+                errorMsg.innerText = "システムの初期化中です。少々お待ちください。";
+                errorMsg.style.display = "block";
+                return;
+            }
+        }
+
+        // 3. 登録処理の擬似実行（Databaseのモック配列へ追加）
+        registerBtn.disabled = true;
+        registerBtn.innerText = "登録処理中...";
+
+        try {
+            // Database.html内の擬似DBオブジェクトを取得
+            const dbFrame = window.parent.document.getElementById('db-iframe') || 
+                            repoFrame.document.getElementById('db-iframe');
+            
+            let targetDb = window.parent.db || window.db;
+            if (dbFrame && dbFrame.contentWindow && dbFrame.contentWindow.db) {
+                targetDb = dbFrame.contentWindow.db;
+            }
+
+            if (!targetDb || !targetDb.users) {
+                // 最悪のケース用のローカルモック作成（エラー回避）
+                if (!window.parent.db) window.parent.db = { users: [] };
+                targetDb = window.parent.db;
+            }
+
+            // 重複チェック
+            const isDuplicate = targetDb.users.some(u => u.studentId === studentId);
+            if (isDuplicate) {
+                errorMsg.innerText = "この学籍番号は既に登録されています。";
+                errorMsg.style.display = "block";
+                registerBtn.disabled = false;
+                registerBtn.innerText = "アカウントを登録する";
+                return;
+            }
+
+            // 新規ユーザーを追加
+            targetDb.users.push({
+                studentId: studentId,
+                password: password
+            });
+
+            // 成功メッセージ表示
+            successMsg.innerText = "アカウント登録が完了しました！ログイン画面へ移動します...";
+            successMsg.style.display = "block";
+            registerBtn.style.backgroundColor = "#27ae60";
+            registerBtn.innerText = "登録完了";
+
+            // 1.5秒後にログイン画面へ自動遷移
+            setTimeout(() => {
+                location.href = 'login.html';
+            }, 1500);
+
+        } catch (e) {
+            console.error(e);
+            errorMsg.innerText = "登録中にエラーが発生しました。時間をおいて再度お試しください。";
+            errorMsg.style.display = "block";
+            registerBtn.disabled = false;
+            registerBtn.innerText = "アカウントを登録する";
+        }
+    }
+    </script>
+</body>
+</html>
