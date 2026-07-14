@@ -2,48 +2,146 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>ホーム - かもくん</title>
+    <title>メニュー選択 - かもくん</title>
     <link rel="stylesheet" href="style.css">
     <script>
-        // ⚡【バグガード】もしこのページが iframe の中で開かれていたら、強制的に画面全体に引き上げる
-        if (window.top !== window.self) {
-            window.top.location.replace(window.self.location.href);
-        }
-
-        // ログイン状態の確認
+        // ログインチェック（未ログインなら強制リダイレクト）
         (function() {
             const currentUser = sessionStorage.getItem('currentUser');
             if (!currentUser) {
-                window.top.location.replace('login.html');
+                window.location.replace('login.html');
             }
         })();
     </script>
+    <style>
+        /* 各ページ直貼り用：ヘッダーのモダンデザイン */
+        .direct-header {
+            background: #1a202c;
+            padding: 15px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid #4a00e0;
+        }
+        .logo {
+            color: #ffffff;
+            font-size: 20px;
+            font-weight: bold;
+            text-decoration: none;
+        }
+        .nav-menu {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        .nav-link {
+            color: #cbd5e0;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 15px;
+            transition: color 0.2s;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #9f7aea;
+        }
+        .btn-logout {
+            background: #e53e3e;
+            color: white;
+            border: none;
+            padding: 6px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        .btn-logout:hover {
+            background: #c53030;
+        }
+
+        /* 選択画面の特別レイアウト */
+        .welcome-container {
+            max-width: 800px;
+            margin: 80px auto;
+            padding: 0 20px;
+            text-align: center;
+        }
+        .choice-wrapper {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            margin-top: 40px;
+            flex-wrap: wrap;
+        }
+        .choice-card {
+            background: #ffffff;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 40px 30px;
+            width: 280px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+        }
+        .choice-card:hover {
+            border-color: #4a00e0;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(74, 0, 224, 0.1);
+        }
+        .choice-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        .choice-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #1a202c;
+            margin-bottom: 12px;
+        }
+        .choice-desc {
+            font-size: 14px;
+            color: #718096;
+            line-height: 1.5;
+        }
+    </style>
 </head>
 <body>
 
-    <!-- 共通ヘッダーの埋め込み（もしiframeで呼ぶ構成の場合も、これでリンクが安全化されます） -->
-    <iframe src="header.html" style="width: 100%; border: none; height: 70px; scrollbar-width: none;" id="header-frame"></iframe>
+    <!-- ⚡ 各ページ直貼りヘッダー（もうiframeは使いません） -->
+    <header class="direct-header">
+        <a href="index.html" class="logo">かもくん</a>
+        <nav class="nav-menu">
+            <a href="index.html" class="nav-link active">メニュー選択</a>
+            <a href="view.html" class="nav-link">レビュー一覧</a>
+            <a href="report.html" class="nav-link">レビュー投稿</a>
+            <button class="btn-logout" onclick="logout()">ログアウト</button>
+        </nav>
+    </header>
 
-    <div class="container" style="max-width: 800px; margin: 40px auto; padding: 20px;">
-        <h1 style="color: #1a202c; text-align: center;">かもくんへようこそ！</h1>
-        <p style="text-align: center; color: #4a5568; font-size: 16px; margin-bottom: 40px;">
-            講義のリアルなレビューを共有・確認できるプラットフォームです。
-        </p>
+    <div class="welcome-container">
+        <h1 style="color: #1a202c; font-size: 32px; margin-bottom: 10px;">おかえりなさい！</h1>
+        <p style="color: #4a5568; font-size: 16px;">これからのアクションを選択してください。</p>
 
-        <div style="display: flex; gap: 20px; justify-content: center;">
-            <button onclick="goToPage('view.html')" style="background: #4a00e0; color: white; padding: 15px 30px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; flex: 1; max-width: 250px;">
-                🔍 レビューを見る
-            </button>
-            <button onclick="goToPage('report.html')" style="background: #ffffff; color: #4a00e0; border: 2px solid #4a00e0; padding: 15px 30px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; flex: 1; max-width: 250px;">
-                ✍️ レビューを書く
-            </button>
+        <div class="choice-wrapper">
+            <!-- 閲覧カード -->
+            <div class="choice-card" onclick="location.href='view.html'">
+                <div class="choice-icon">🔍</div>
+                <div class="choice-title">レビューを閲覧</div>
+                <div class="choice-desc">みんなが投稿した講義の評価やアドバイスをチェックします。</div>
+            </div>
+
+            <!-- 投稿カード -->
+            <div class="choice-card" onclick="location.href='report.html'">
+                <div class="choice-icon">✍️</div>
+                <div class="choice-title">レビューを投稿</div>
+                <div class="choice-desc">あなたが受けた講義の感想をシェアして、みんなを助けましょう。</div>
+            </div>
         </div>
     </div>
 
     <script>
-        function goToPage(page) {
-            // ⚡ ボタンクリック時も必ず最上階（画面全体）を遷移させる
-            window.top.location.href = page;
+        function logout() {
+            window.location.replace('logout.html');
         }
     </script>
 </body>
