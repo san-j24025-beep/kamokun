@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>レビュー一覧 - かもくん</title>
+    <title>ピン止め済みレビュー - かもくん</title>
     <link rel="stylesheet" href="style.css">
     <script src="auth.js"></script>
     <script>
@@ -62,6 +62,11 @@
             margin-bottom: 20px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
             border: 1px solid #e2e8f0;
+            border-left: 4px solid #d69e2e;
+        }
+        .review-card.pinned {
+            border-left-color: #c05621;
+            background: #fffaf0;
         }
         .review-header {
             display: flex;
@@ -97,10 +102,6 @@
             align-items: center;
             gap: 6px;
             transition: all 0.2s;
-        }
-        .like-btn:hover:not(:disabled) {
-            background: #fff5f5;
-            transform: scale(1.05);
         }
         .like-btn.liked {
             background: #fff5f5;
@@ -158,10 +159,6 @@
             padding: 4px 0;
             color: #4a5568;
         }
-        .anonymous-marker {
-            font-style: italic;
-            color: #a0aec0;
-        }
         .comment-section {
             background: #f8fafc;
             border-radius: 8px;
@@ -215,6 +212,12 @@
             font-weight: 600;
             font-size: 14px;
         }
+        .empty-message {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
+            font-size: 18px;
+        }
     </style>
 </head>
 <body>
@@ -224,46 +227,26 @@
         <a href="index.html" class="logo">かもくん</a>
         <nav class="nav-menu">
             <a href="index.html" class="nav-link">メニュー選択</a>
-            <a href="view.html" class="nav-link active">レビュー一覧</a>
+            <a href="view.html" class="nav-link">レビュー一覧</a>
             <a href="report.html" class="nav-link">レビュー投稿</a>
-            <a href="pin.html" class="nav-link">📌 ピン止め済み</a>
+            <a href="pin.html" class="nav-link active">📌 ピン止め済み</a>
             <button class="btn-logout" onclick="logout()">ログアウト</button>
         </nav>
     </header>
 
     <div class="container" style="max-width: 800px; margin: 40px auto; padding: 20px;">
-        <h2>みんなのレビュー一覧</h2>
+        <h2>📌 ピン止め済みレビュー</h2>
         
-        <div id="reviews-container">
-            <!-- 読み込み中のダミー表示 -->
-            <div class="review-card">
-                <div class="review-header">
-                    <span>投稿者: t23xxx</span>
-                    <span>2026/07/14</span>
-                </div>
-                <div class="review-body">
-                    Webプログラミング演習の課題、難しかったけど楽しかったです！
-                </div>
-                <div class="action-area">
-                    <button class="like-btn" onclick="toggleLike(this, 1)">❤️ いいね！ <span class="like-count">3</span></button>
-                    <button class="pin-btn" onclick="togglePin(this, 1)">📌 ピン止め</button>
-                </div>
-                <div class="comment-section">
-                    <ul class="comment-list" id="comments-1">
-                        <li class="comment-item" data-author="t23abc"><span class="comment-user" onclick="startReplyToComment(event)">t23abc:</span> それな！めちゃめちゃ苦戦しました。</li>
-                    </ul>
-                    <div class="comment-form">
-                        <input type="text" class="comment-input" placeholder="コメントを入力..." id="input-1">
-                        <button class="comment-submit" onclick="postComment(1)">送信</button>
-                    </div>
-                </div>
+        <div id="pinned-container">
+            <div class="empty-message">
+                ピン止めされたレビューはまだありません
             </div>
         </div>
     </div>
 
     <script>
         const currentUser = getStoredUser() || { studentId: 'ゲスト', isAnonymous: false };
-        const likedReviews = new Set(); // ユーザーが既にいいねした投稿を記録
+        const likedReviews = new Set();
 
         function logout() {
             window.location.replace('logout.html');
@@ -275,28 +258,36 @@
             return botKeywords.some(keyword => studentId.toLowerCase().includes(keyword.toLowerCase()));
         }
 
-        // いいねボタンをトグル（押すと状態が切り替わる）
+        // いいねボタンをトグル
         function toggleLike(button, reviewId) {
             const countSpan = button.querySelector('.like-count');
             let currentLikes = parseInt(countSpan.innerText);
             
             if (likedReviews.has(reviewId)) {
-                // いいね済みの場合は解除
                 currentLikes -= 1;
                 likedReviews.delete(reviewId);
                 button.classList.remove('liked');
             } else {
-                // いいねしていない場合は追加
                 currentLikes += 1;
                 likedReviews.add(reviewId);
                 button.classList.add('liked');
             }
             
             countSpan.innerText = currentLikes;
-            
-            // アニメーション
             button.style.transform = 'scale(1.2)';
             setTimeout(() => button.style.transform = 'scale(1)', 150);
+        }
+
+        // ピン止め解除
+        function unpinReview(button, reviewId) {
+            localStorage.removeItem(`pinned-${reviewId}`);
+            button.closest('.review-card').remove();
+            
+            // ピン止めされたレビューがない場合
+            const container = document.getElementById('pinned-container');
+            if (container.querySelectorAll('.review-card').length === 0) {
+                container.innerHTML = '<div class="empty-message">ピン止めされたレビューはまだありません</div>';
+            }
         }
 
         // コメント投稿
@@ -305,7 +296,6 @@
             const commentText = input.value.trim();
             if (!commentText) return;
 
-            // botのコメントは投稿しない
             if (isBot(currentUser.studentId)) {
                 alert('botユーザーはコメントを投稿できません');
                 return;
@@ -315,7 +305,6 @@
             const li = document.createElement('li');
             li.className = 'comment-item';
             
-            // 投稿者名を表示
             const userName = currentUser.isAnonymous ? '匿名' : currentUser.studentId;
             li.innerHTML = `<span class="comment-user" onclick="startReplyToComment(event)">${escapeHTML(userName)}:</span> ${escapeHTML(commentText)}`;
             li.setAttribute('data-author', currentUser.studentId);
@@ -353,7 +342,6 @@
             const replyText = replyInput.value.trim();
             if (!replyText) return;
 
-            // botの返信は投稿しない
             if (isBot(currentUser.studentId)) {
                 alert('botユーザーは返信を投稿できません');
                 return;
@@ -377,75 +365,57 @@
             );
         }
 
-        // ピン止めボタン
-        function togglePin(button, reviewId) {
-            if (button.classList.contains('pinned')) {
-                // ピン止め解除
-                button.classList.remove('pinned');
-                button.textContent = '📌 ピン止め';
-                localStorage.removeItem(`pinned-${reviewId}`);
-            } else {
-                // ピン止め
-                button.classList.add('pinned');
-                button.textContent = '📍 ピン止め中';
-                localStorage.setItem(`pinned-${reviewId}`, 'true');
-            }
-        }
+        // ピン止めされたレビューを表示
+        function displayPinnedReviews() {
+            const container = document.getElementById('pinned-container');
+            const pinnedReviews = [];
 
-        // ピン止め状態を復元
-        function restorePinState() {
-            const reviews = document.querySelectorAll('.review-card');
-            reviews.forEach((review, index) => {
-                const pinBtn = review.querySelector('.pin-btn');
-                if (pinBtn && localStorage.getItem(`pinned-${index + 1}`) === 'true') {
-                    pinBtn.classList.add('pinned');
-                    pinBtn.textContent = '📍 ピン止め中';
+            // localStorageからピン止めされたレビューを取得
+            for (let key in localStorage) {
+                if (key.startsWith('pinned-')) {
+                    pinnedReviews.push(key);
                 }
-            });
-        }
+            }
 
-        // レビューをいいね数でソート
-        function sortReviewsByLikes() {
-            const container = document.getElementById('reviews-container');
-            const reviews = Array.from(container.querySelectorAll('.review-card'));
-            
-            reviews.sort((a, b) => {
-                const likeCountA = parseInt(a.querySelector('.like-count')?.innerText || 0);
-                const likeCountB = parseInt(b.querySelector('.like-count')?.innerText || 0);
-                return likeCountB - likeCountA;
-            });
-            
-            reviews.forEach(review => container.appendChild(review));
+            if (pinnedReviews.length === 0) {
+                container.innerHTML = '<div class="empty-message">ピン止めされたレビューはまだありません</div>';
+                return;
+            }
+
+            container.innerHTML = '';
+
+            // ダミーレビューをピン止め用に修正
+            const dummyReview = `
+                <div class="review-card pinned" id="review-1">
+                    <div class="review-header">
+                        <span>投稿者: t23xxx</span>
+                        <span>2026/07/14</span>
+                    </div>
+                    <div class="review-body">
+                        Webプログラミング演習の課題、難しかったけど楽しかったです！
+                    </div>
+                    <div class="action-area">
+                        <button class="like-btn" onclick="toggleLike(this, 1)">❤️ いいね！ <span class="like-count">3</span></button>
+                        <button class="pin-btn pinned" onclick="unpinReview(this, 1)">📍 ピン止め中</button>
+                    </div>
+                    <div class="comment-section">
+                        <ul class="comment-list" id="comments-1">
+                            <li class="comment-item" data-author="t23abc"><span class="comment-user" onclick="startReplyToComment(event)">t23abc:</span> それな！めちゃめちゃ苦戦しました。</li>
+                        </ul>
+                        <div class="comment-form">
+                            <input type="text" class="comment-input" placeholder="コメントを入力..." id="input-1">
+                            <button class="comment-submit" onclick="postComment(1)">送信</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = dummyReview;
         }
 
         // 初期化処理
         document.addEventListener('DOMContentLoaded', function() {
-            // botコメント及び投稿を排除
-            const reviews = document.querySelectorAll('.review-card');
-            reviews.forEach(review => {
-                const header = review.querySelector('.review-header');
-                const authorText = header.innerText;
-                
-                // botの投稿は非表示
-                if (isBot(authorText)) {
-                    review.style.display = 'none';
-                }
-
-                // botのコメントは非表示
-                const comments = review.querySelectorAll('.comment-item');
-                comments.forEach(comment => {
-                    const author = comment.getAttribute('data-author') || comment.querySelector('.comment-user')?.innerText?.replace(':', '');
-                    if (isBot(author)) {
-                        comment.style.display = 'none';
-                    }
-                });
-            });
-
-            // レビューをいいね数でソート
-            sortReviewsByLikes();
-
-            // ピン止め状態を復元
-            restorePinState();
+            displayPinnedReviews();
         });
     </script>
 </body>
