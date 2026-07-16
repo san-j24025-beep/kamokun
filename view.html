@@ -271,7 +271,7 @@
 
         // botの名前かどうかを判定
         function isBot(studentId) {
-            const botKeywords = ['bot', 'bot', 'システム', 'admin', 'test_bot'];
+            const botKeywords = ['bot', 'システム', 'admin', 'test_bot'];
             return botKeywords.some(keyword => studentId.toLowerCase().includes(keyword.toLowerCase()));
         }
 

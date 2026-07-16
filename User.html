@@ -8,8 +8,8 @@ class User {
         this.db = db;
     }
 
-    async login(studentId, grade) {
-        const result = await this.db.request('login', { studentId, grade });
+    async login(studentId, password) {
+        const result = await this.db.request('login', { studentId, password });
         if (result.success) {
             localStorage.setItem('currentUser', JSON.stringify(result.user));
             return { success: true };

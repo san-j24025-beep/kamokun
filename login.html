@@ -92,9 +92,12 @@
         </div>
     </div>
 
+    <!-- 必要なスクリプトの読み込み -->
+    <iframe src="Database.html" id="db-iframe" style="display:none;"></iframe>
+    <iframe src="User.html" id="user-iframe" style="display:none;"></iframe>
     <script src="auth.js"></script>
     <script>
-    function login() {
+    async function login() {
         const studentId = document.getElementById('studentId').value.trim();
         const password = document.getElementById('password').value.trim();
         const errorMsg = document.getElementById('error-msg');
@@ -107,13 +110,40 @@
             return;
         }
 
+        const loginBtn = document.getElementById('login-btn');
+        loginBtn.disabled = true;
+        loginBtn.innerText = "ログイン中...";
+
         try {
-            saveCurrentUser({ studentId: studentId });
-            console.log("ログイン成功。index.htmlへ遷移します...");
-            window.location.replace('index.html');
+            // Database と User の定義を取得
+            const dbFrame = document.getElementById('db-iframe').contentWindow;
+            const userFrame = document.getElementById('user-iframe').contentWindow;
+
+            if (!dbFrame.Database || !userFrame.User) {
+                throw new Error("システムの初期化に失敗しました。");
+            }
+
+            const db = new dbFrame.Database();
+            const user = new userFrame.User(db);
+
+            // GAS連携ログイン処理の実行
+            const result = await user.login(studentId, password);
+
+            if (result.success) {
+                console.log("ログイン成功。index.htmlへ遷移します...");
+                window.location.replace('index.html');
+            } else {
+                errorMsg.innerText = result.error || "ログインに失敗しました。";
+                errorMsg.style.display = "block";
+                loginBtn.disabled = false;
+                loginBtn.innerText = "ログイン";
+            }
         } catch (e) {
             console.error("エラーが発生しました:", e);
-            window.location.replace('index.html');
+            errorMsg.innerText = "通信エラーまたは初期化エラーが発生しました。";
+            errorMsg.style.display = "block";
+            loginBtn.disabled = false;
+            loginBtn.innerText = "ログイン";
         }
     }
     </script>
