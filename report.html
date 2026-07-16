@@ -136,6 +136,11 @@
                 <label for="comment">感想・アドバイス</label>
                 <textarea id="comment" class="form-control" style="min-height: 120px;" placeholder="テストの傾向や、出席の重要さなどを自由に書いてください" required></textarea>
             </div>
+            <!-- 匿名チェック -->
+            <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                <input type="checkbox" id="anonymous" style="width: 20px; height: 20px; cursor: pointer;">
+                <label for="anonymous" style="margin: 0; cursor: pointer;">匿名で投稿する</label>
+            </div>
             <button type="submit" class="btn-submit">レビューを投稿する</button>
         </form>
     </div>
@@ -147,6 +152,10 @@
 
         function submitReview(event) {
             event.preventDefault();
+            const isAnonymous = document.getElementById('anonymous').checked;
+            // 匿名フラグを保存
+            const currentUser = getStoredUser() || { studentId: 'ゲスト' };
+            saveCurrentUser(currentUser, isAnonymous);
             alert("投稿が完了しました！（一覧へ遷移します）");
             window.location.href = 'view.html';
         }

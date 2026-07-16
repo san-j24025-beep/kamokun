@@ -98,9 +98,60 @@
             gap: 6px;
             transition: all 0.2s;
         }
-        .like-btn:hover {
+        .like-btn:hover:not(:disabled) {
             background: #fff5f5;
             transform: scale(1.05);
+        }
+        .like-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            background: #fff5f5;
+        }
+        .reply-btn {
+            background: #edf2f7;
+            color: #4a00e0;
+            border: 1px solid #cbd5e0;
+            padding: 4px 10px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        .reply-btn:hover {
+            background: #e2e8f0;
+        }
+        .reply-form {
+            display: flex;
+            gap: 8px;
+            margin: 8px 0 0 20px;
+        }
+        .reply-input {
+            flex: 1;
+            padding: 6px 10px;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+        .reply-submit {
+            background: #4a00e0;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 12px;
+        }
+        .reply-item {
+            margin-left: 20px;
+            font-size: 13px;
+            padding: 4px 0;
+            color: #4a5568;
+        }
+        .anonymous-marker {
+            font-style: italic;
+            color: #a0aec0;
         }
         .comment-section {
             background: #f8fafc;
@@ -178,11 +229,11 @@
                     Webプログラミング演習の課題、難しかったけど楽しかったです！
                 </div>
                 <div class="action-area">
-                    <button class="like-btn" onclick="addLike(this)">❤️ いいね！ <span class="like-count">3</span></button>
+                    <button class="like-btn" onclick="addLike(this, 1)">❤️ いいね！ <span class="like-count">3</span></button>
                 </div>
                 <div class="comment-section">
                     <ul class="comment-list" id="comments-1">
-                        <li class="comment-item"><span class="comment-user">t23abc:</span>それな！めちゃめちゃ苦戦しました。</li>
+                        <li class="comment-item" data-author="t23abc"><span class="comment-user">t23abc:</span>それな！めちゃめちゃ苦戦しました。 <button class="reply-btn" onclick="toggleReplyForm(event)">返信</button></li>
                     </ul>
                     <div class="comment-form">
                         <input type="text" class="comment-input" placeholder="コメントを入力..." id="input-1">
@@ -194,39 +245,160 @@
     </div>
 
     <script>
-        const currentUser = getStoredUser() || { studentId: 'ゲスト' };
+        const currentUser = getStoredUser() || { studentId: 'ゲスト', isAnonymous: false };
+        const likedReviews = new Set(); // ユーザーが既にいいねした投稿を記録
 
         function logout() {
             window.location.replace('logout.html');
         }
 
-        function addLike(button) {
+        // botの名前かどうかを判定
+        function isBot(studentId) {
+            const botKeywords = ['bot', 'bot', 'システム', 'admin', 'test_bot'];
+            return botKeywords.some(keyword => studentId.toLowerCase().includes(keyword.toLowerCase()));
+        }
+
+        // いいねボタンを押す（一つの投稿に一回まで）
+        function addLike(button, reviewId) {
+            // 既にいいね済みの場合は無視
+            if (likedReviews.has(reviewId)) {
+                return;
+            }
+
             const countSpan = button.querySelector('.like-count');
             let currentLikes = parseInt(countSpan.innerText);
             currentLikes += 1;
             countSpan.innerText = currentLikes;
+            
+            // ボタンをdisabledにして、クリック不可にする
+            button.disabled = true;
+            button.textContent = '❤️ いいね済み';
+            
+            // セットに追加
+            likedReviews.add(reviewId);
+            
+            // アニメーション
             button.style.transform = 'scale(1.2)';
             setTimeout(() => button.style.transform = 'scale(1)', 150);
         }
 
-        function postComment(id) {
-            const input = document.getElementById(`input-${id}`);
+        // コメント投稿
+        function postComment(reviewId) {
+            const input = document.getElementById(`input-${reviewId}`);
             const commentText = input.value.trim();
             if (!commentText) return;
 
-            const commentList = document.getElementById(`comments-${id}`);
+            // botのコメントは投稿しない
+            if (isBot(currentUser.studentId)) {
+                alert('botユーザーはコメントを投稿できません');
+                return;
+            }
+
+            const commentList = document.getElementById(`comments-${reviewId}`);
             const li = document.createElement('li');
             li.className = 'comment-item';
-            li.innerHTML = `<span class="comment-user">${currentUser.studentId}:</span>${escapeHTML(commentText)}`;
+            
+            // 投稿者名を表示
+            const userName = currentUser.isAnonymous ? '匿名' : currentUser.studentId;
+            li.innerHTML = `<span class="comment-user">${escapeHTML(userName)}:</span>${escapeHTML(commentText)} <button class="reply-btn" onclick="toggleReplyForm(event)">返信</button>`;
+            li.setAttribute('data-author', currentUser.studentId);
+            
             commentList.appendChild(li);
             input.value = '';
         }
 
+        // 返信フォーム表示/非表示
+        function toggleReplyForm(event) {
+            event.preventDefault();
+            const commentItem = event.target.closest('.comment-item');
+            let replyForm = commentItem.querySelector('.reply-form');
+            
+            if (replyForm) {
+                replyForm.remove();
+            } else {
+                const commentId = Math.random().toString(36).substr(2, 9);
+                const html = `
+                    <div class="reply-form">
+                        <input type="text" class="reply-input" placeholder="返信を入力..." id="reply-${commentId}">
+                        <button class="reply-submit" onclick="postReply(event, '${commentId}')">送信</button>
+                    </div>
+                `;
+                commentItem.insertAdjacentHTML('afterend', html);
+                document.getElementById(`reply-${commentId}`).focus();
+            }
+        }
+
+        // 返信投稿
+        function postReply(event, commentId) {
+            event.preventDefault();
+            const replyInput = document.getElementById(`reply-${commentId}`);
+            const replyText = replyInput.value.trim();
+            if (!replyText) return;
+
+            // botの返信は投稿しない
+            if (isBot(currentUser.studentId)) {
+                alert('botユーザーは返信を投稿できません');
+                return;
+            }
+
+            const replyForm = replyInput.closest('.reply-form');
+            const replyDiv = document.createElement('div');
+            replyDiv.className = 'reply-item';
+            
+            const userName = currentUser.isAnonymous ? '匿名' : currentUser.studentId;
+            replyDiv.innerHTML = `<span class="comment-user">${escapeHTML(userName)}:</span> ${escapeHTML(replyText)}`;
+            
+            replyForm.insertAdjacentElement('afterend', replyDiv);
+            replyForm.remove();
+        }
+
+        // HTMLエスケープ
         function escapeHTML(str) {
             return str.replace(/[&<>'"]/g, 
                 tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
             );
         }
+
+        // レビューをいいね数でソート
+        function sortReviewsByLikes() {
+            const container = document.getElementById('reviews-container');
+            const reviews = Array.from(container.querySelectorAll('.review-card'));
+            
+            reviews.sort((a, b) => {
+                const likeCountA = parseInt(a.querySelector('.like-count')?.innerText || 0);
+                const likeCountB = parseInt(b.querySelector('.like-count')?.innerText || 0);
+                return likeCountB - likeCountA;
+            });
+            
+            reviews.forEach(review => container.appendChild(review));
+        }
+
+        // 初期化処理
+        document.addEventListener('DOMContentLoaded', function() {
+            // botコメント及び投稿を排除
+            const reviews = document.querySelectorAll('.review-card');
+            reviews.forEach(review => {
+                const header = review.querySelector('.review-header');
+                const authorText = header.innerText;
+                
+                // botの投稿は非表示
+                if (isBot(authorText)) {
+                    review.style.display = 'none';
+                }
+
+                // botのコメントは非表示
+                const comments = review.querySelectorAll('.comment-item');
+                comments.forEach(comment => {
+                    const author = comment.getAttribute('data-author') || comment.querySelector('.comment-user')?.innerText?.replace(':', '');
+                    if (isBot(author)) {
+                        comment.style.display = 'none';
+                    }
+                });
+            });
+
+            // レビューをいいね数でソート
+            sortReviewsByLikes();
+        });
     </script>
 </body>
 </html>

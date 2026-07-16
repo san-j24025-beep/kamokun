@@ -27,8 +27,14 @@ function getStoredUser() {
     return null;
 }
 
-function saveCurrentUser(user) {
-    const normalizedUser = user && user.studentId ? { studentId: user.studentId } : { studentId: 'ゲスト' };
+function saveCurrentUser(user, isAnonymous = false) {
+    const normalizedUser = user && user.studentId ? { 
+        studentId: user.studentId,
+        isAnonymous: isAnonymous || false
+    } : { 
+        studentId: 'ゲスト',
+        isAnonymous: false
+    };
     sessionStorage.setItem('currentUser', JSON.stringify(normalizedUser));
     localStorage.setItem('currentUser', JSON.stringify(normalizedUser));
     return normalizedUser;
