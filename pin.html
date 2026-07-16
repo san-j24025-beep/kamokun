@@ -85,51 +85,54 @@
         }
         .action-area {
             display: flex;
-            gap: 15px;
+            align-items: center;
+            justify-content: space-between;
             border-top: 1px solid #edf2f7;
             padding-top: 12px;
             margin-bottom: 15px;
         }
+        .like-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .like-count-display {
+            font-size: 16px;
+            font-weight: bold;
+            color: #4a5568;
+        }
         .like-btn {
             background: #fff;
-            color: #e53e3e;
-            border: 1px solid #fed7d7;
+            border: 1px solid #e2e8f0;
             padding: 6px 12px;
             border-radius: 20px;
             cursor: pointer;
-            font-weight: 600;
+            font-size: 16px;
             display: flex;
             align-items: center;
-            gap: 6px;
+            justify-content: center;
             transition: all 0.2s;
         }
         .like-btn.liked {
-            background: #fff5f5;
-            opacity: 1;
-            cursor: pointer;
+            background: #edf2f7;
+            border-color: #cbd5e0;
         }
         .like-btn:hover {
-            background: #fff5f5;
+            background: #f7fafc;
             transform: scale(1.05);
         }
         .pin-btn {
-            background: #edf2f7;
-            color: #d69e2e;
-            border: 1px solid #fbd38d;
-            padding: 6px 12px;
-            border-radius: 20px;
+            background: none;
+            border: none;
+            color: #f6ad55;
             cursor: pointer;
-            font-weight: 600;
-            font-size: 14px;
+            font-size: 24px;
+            padding: 4px;
             transition: all 0.2s;
+            line-height: 1;
         }
         .pin-btn:hover {
-            background: #fef5e7;
-            transform: scale(1.05);
-        }
-        .pin-btn.pinned {
-            background: #fef5e7;
-            color: #c05621;
+            transform: scale(1.15);
         }
         .reply-form {
             display: flex;
@@ -254,13 +257,14 @@
 
         // botの名前かどうかを判定
         function isBot(studentId) {
-            const botKeywords = ['bot', 'bot', 'システム', 'admin', 'test_bot'];
+            const botKeywords = ['bot', 'システム', 'admin', 'test_bot'];
             return botKeywords.some(keyword => studentId.toLowerCase().includes(keyword.toLowerCase()));
         }
 
         // いいねボタンをトグル
         function toggleLike(button, reviewId) {
-            const countSpan = button.querySelector('.like-count');
+            const container = button.closest('.like-container');
+            const countSpan = container.querySelector('.like-count');
             let currentLikes = parseInt(countSpan.innerText);
             
             if (likedReviews.has(reviewId)) {
@@ -395,8 +399,11 @@
                         Webプログラミング演習の課題、難しかったけど楽しかったです！
                     </div>
                     <div class="action-area">
-                        <button class="like-btn" onclick="toggleLike(this, 1)">❤️ いいね！ <span class="like-count">3</span></button>
-                        <button class="pin-btn pinned" onclick="unpinReview(this, 1)">📍 ピン止め中</button>
+                        <div class="like-container">
+                            <button class="like-btn" onclick="toggleLike(this, 1)">👍</button>
+                            <span class="like-count-display"><span class="like-count">3</span> いいね数</span>
+                        </div>
+                        <button class="pin-btn pinned" onclick="unpinReview(this, 1)">★</button>
                     </div>
                     <div class="comment-section">
                         <ul class="comment-list" id="comments-1">
