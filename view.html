@@ -86,26 +86,18 @@
             padding-top: 12px;
             margin-bottom: 15px;
         }
-        .like-container {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .like-count-display {
-            font-size: 16px;
-            font-weight: bold;
-            color: #4a5568;
-        }
         .like-btn {
             background: #fff;
             border: 1px solid #e2e8f0;
-            padding: 6px 12px;
+            padding: 5px 12px;
             border-radius: 20px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #4a5568;
             display: flex;
             align-items: center;
-            justify-content: center;
+            gap: 4px;
             transition: all 0.2s;
         }
         .like-btn:hover:not(:disabled) {
@@ -121,8 +113,8 @@
             border: none;
             color: #a0aec0;
             cursor: pointer;
-            font-size: 24px;
-            padding: 4px;
+            font-size: 18px; /* 星マークを小さく */
+            padding: 2px;
             transition: all 0.2s;
             line-height: 1;
         }
@@ -247,10 +239,7 @@
                     Webプログラミング演習の課題、難しかったけど楽しかったです！
                 </div>
                 <div class="action-area">
-                    <div class="like-container">
-                        <button class="like-btn" onclick="toggleLike(this, 1)">👍</button>
-                        <span class="like-count-display"><span class="like-count">3</span> いいね数</span>
-                    </div>
+                    <button class="like-btn" onclick="toggleLike(this, 1)">👍 <span class="like-count">3</span></button>
                     <button class="pin-btn" onclick="togglePin(this, 1)">☆</button>
                 </div>
                 <div class="comment-section">
@@ -282,8 +271,7 @@
 
         // いいねボタンをトグル（押すと状態が切り替わる）
         function toggleLike(button, reviewId) {
-            const container = button.closest('.like-container');
-            const countSpan = container.querySelector('.like-count');
+            const countSpan = button.querySelector('.like-count');
             let currentLikes = parseInt(countSpan.innerText);
             
             if (likedReviews.has(reviewId)) {
@@ -301,7 +289,7 @@
             countSpan.innerText = currentLikes;
             
             // アニメーション
-            button.style.transform = 'scale(1.2)';
+            button.style.transform = 'scale(1.1)';
             setTimeout(() => button.style.transform = 'scale(1)', 150);
         }
 
@@ -437,7 +425,7 @@
                     review.style.display = 'none';
                 }
 
-                // botのコメントは非表示
+                // bot的コメントは非表示
                 const comments = review.querySelectorAll('.comment-item');
                 comments.forEach(comment => {
                     const author = comment.getAttribute('data-author') || comment.querySelector('.comment-user')?.innerText?.replace(':', '');
