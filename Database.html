@@ -1,36 +1,30 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Database</title>
-</head>
-<body>
 <script>
 class Database {
     constructor() {
-        // あなたの正しいGASウェブアプリURL
-        this.gasUrl = 'https://script.google.com/macros/s/AKfycbyp2xDnWOQATqSohHHU-eqJuEBSlG6tcPb_KXIXWOmXyaB5k6Oo_--nJpNJZOB0w2u0sw/exec';
+        // ★ここにGASで新しくデプロイした「ウェブアプリのURL」を貼り付けます★
+        this.gasUrl = "https://script.google.com/macros/s/AKfycbyp2xDnWOQATqSohHHU-eqJuEBSlG6tcPb_KXIXWOmXyaB5k6Oo_--nJpNJZOB0w2u0sw/exec";
     }
 
-    async request(action, data = {}) {
+    async request(action, data) {
         try {
-            const safeUrl = encodeURI(this.gasUrl);
-            const response = await fetch(safeUrl, {
+            // fetchを使ってGitHubからGASのURLへ通信を行う
+            const response = await fetch(this.gasUrl, {
                 method: 'POST',
-                mode: 'cors',
                 headers: {
-                    'Content-Type': 'text/plain',
+                    // GASのセキュリティ制約（CORS）を回避するために text/plain を指定
+                    'Content-Type': 'text/plain' 
                 },
-                body: JSON.stringify({ action, ...data })
+                body: JSON.stringify({ action: action, data: data })
             });
-            return await response.json();
+            
+            // GASからの返答（JSON）を受け取って返す
+            const result = await response.json();
+            return result;
         } catch (error) {
-            console.error("Database Error:", error);
-            return { success: false, error: "通信エラーが発生しました" };
+            console.error("Fetchエラー:", error);
+            return { success: false, error: "サーバーとの通信に失敗しました" };
         }
     }
 }
 window.Database = Database;
 </script>
-</body>
-</html>
