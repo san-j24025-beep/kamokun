@@ -8,12 +8,12 @@ class Review {
         this.db = db;
     }
 
-    async getAll() {
-        return await this.db.request('getReviews');
-    }
-
     async create(studentId, subject, rating, comment) {
         return await this.db.request('createReview', { studentId, subject, rating, comment });
+    }
+
+    async getAll() {
+        return await this.db.request('getAllReviews', {});
     }
 }
 window.Review = Review;
