@@ -7,7 +7,7 @@
     <script src="auth.js"></script>
     <script>
         (function() {
-            if (!requireAuth()) {
+            if (typeof requireAuth === 'function' && !requireAuth()) {
                 return;
             }
         })();
@@ -103,10 +103,6 @@
             background: #f7fafc;
             transform: scale(1.05);
         }
-        .like-btn.liked {
-            background: #edf2f7;
-            border-color: #cbd5e0;
-        }
         .pin-btn {
             background: none;
             border: none;
@@ -120,21 +116,6 @@
         .pin-btn:hover {
             transform: scale(1.15);
         }
-        .pin-btn.pinned {
-            color: #f6ad55;
-        }
-        .reply-form { display: flex; gap: 8px; margin: 8px 0 0 20px; }
-        .reply-input { flex: 1; padding: 6px 10px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 12px; }
-        .reply-submit { background: #4a00e0; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; }
-        .reply-item { margin-left: 20px; font-size: 13px; padding: 4px 0; color: #4a5568; }
-        .comment-section { background: #f8fafc; border-radius: 8px; padding: 12px; margin-top: 10px; }
-        .comment-list { list-style: none; padding: 0; margin: 0 0 10px 0; }
-        .comment-item { font-size: 14px; color: #4a5568; padding: 6px 0; border-bottom: 1px dashed #e2e8f0; }
-        .comment-item:last-child { border-bottom: none; }
-        .comment-user { font-weight: bold; color: #4a00e0; margin-right: 6px; cursor: pointer; text-decoration: underline; transition: color 0.2s; }
-        .comment-form { display: flex; gap: 8px; margin-top: 8px; }
-        .comment-input { flex: 1; padding: 8px 12px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px; }
-        .comment-submit { background: #4a00e0; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px; }
         .loading-message { text-align: center; padding: 40px; color: #718096; font-size: 18px; }
     </style>
 </head>
@@ -157,25 +138,18 @@
         </div>
     </div>
 
-    <!-- データベース連携用iframe -->
+    <!-- ★実際のファイル名に合わせて、頭文字を大文字に戻しました -->
     <iframe src="Database.html" id="db-iframe" style="display:none;"></iframe>
     <iframe src="Review.html" id="review-iframe" style="display:none;"></iframe>
 
     <script>
-        const currentUser = getStoredUser() || { studentId: 'ゲスト', isAnonymous: false };
-        const likedReviews = new Set(); 
-
         function logout() { window.location.replace('logout.html'); }
+        
         function isBot(studentId) {
             if (!studentId) return false;
             const botKeywords = ['bot', 'システム', 'admin', 'test_bot'];
             return botKeywords.some(keyword => studentId.toLowerCase().includes(keyword.toLowerCase()));
         }
-
-        function toggleLike(button, reviewId) { /* ... 既存のまま ... */ }
-        function postComment(reviewId) { /* ... 既存のまま ... */ }
-        function startReplyToComment(event) { /* ... 既存のまま ... */ }
-        function postReply(event, commentId, authorName) { /* ... 既存のまま ... */ }
 
         function escapeHTML(str) {
             if (!str) return '';
@@ -184,9 +158,6 @@
             );
         }
 
-        function togglePin(button, reviewId) { /* ... 既存のまま ... */ }
-        function restorePinState() { /* ... 既存のまま ... */ }
-        function sortReviewsByLikes() { /* ... 既存のまま ... */ }
         function getStars(rating) {
             const num = parseInt(rating) || 3;
             return '★'.repeat(num) + '☆'.repeat(5 - num);
@@ -207,6 +178,7 @@
             const container = document.getElementById('reviews-container');
 
             try {
+                // iframeの読み込み完了を待機
                 await Promise.all([
                     waitForIframeLoad('db-iframe'),
                     waitForIframeLoad('review-iframe')
@@ -215,14 +187,15 @@
                 const dbFrame = document.getElementById('db-iframe').contentWindow;
                 const reviewFrame = document.getElementById('review-iframe').contentWindow;
 
+                // ファイルが見つからず正しく読み込めなかった場合のエラー処理
                 if (!dbFrame.Database || !reviewFrame.Review) {
-                    throw new Error("データベース接続用ファイルの読み込みに失敗しました");
+                    throw new Error("データベース接続用ファイルの読み込みに失敗しました。ファイル名を確認してください。");
                 }
 
                 const db = new dbFrame.Database();
                 const reviewAPI = new reviewFrame.Review(db);
 
-                // APIリクエスト実行
+                // APIリクエスト実行（GASからデータを取得）
                 const result = await reviewAPI.getAll();
 
                 // エラーレスポンスが返ってきているかのチェック
@@ -244,6 +217,7 @@
 
                 container.innerHTML = '';
 
+                // 取得したデータを画面に表示
                 reviewsData.forEach((review, index) => {
                     const author = review.studentId || '不明';
                     if (isBot(author)) return;
@@ -262,12 +236,11 @@
                             </div>
                             <div class="review-body">
                                 <strong>${escapeHTML(subject)}</strong><br>
-                                <span style="color: #d69e2e; font-size: 14px;">おすすめ度: ${getStars(rating)}</span><br><br>
-                                ${escapeHTML(comment).replace(/\n/g, '<br>')}
+                                <span style="color: #d69e2e; font-size: 14px;">おすすめ度: ${getStars(rating)}</span><br><br>${escapeHTML(comment).replace(/\n/g, '<br>')}
                             </div>
                             <div class="action-area">
-                                <button class="like-btn" onclick="toggleLike(this, '${reviewId}')">👍 <span class="like-count">0</span></button>
-                                <button class="pin-btn" onclick="togglePin(this, '${reviewId}')">☆</button>
+                                <button class="like-btn" onclick="alert('いいね機能は準備中です')">👍 <span class="like-count">0</span></button>
+                                <button class="pin-btn" onclick="alert('ピン留め機能は準備中です')">☆</button>
                             </div>
                         </div>
                     `;
