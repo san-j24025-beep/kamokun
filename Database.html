@@ -1,30 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body>
 <script>
 class Database {
     constructor() {
-        // ★ここにGASで新しくデプロイした「ウェブアプリのURL」を貼り付けます★
+        // ★ここにGASでデプロイした最新の「ウェブアプリのURL」を貼り付けます★
         this.gasUrl = "https://script.google.com/macros/s/AKfycbyp2xDnWOQATqSohHHU-eqJuEBSlG6tcPb_KXIXWOmXyaB5k6Oo_--nJpNJZOB0w2u0sw/exec";
     }
 
     async request(action, data) {
         try {
-            // fetchを使ってGitHubからGASのURLへ通信を行う
             const response = await fetch(this.gasUrl, {
                 method: 'POST',
                 headers: {
-                    // GASのセキュリティ制約（CORS）を回避するために text/plain を指定
-                    'Content-Type': 'text/plain' 
+                    'Content-Type': 'text/plain'
                 },
+                cache: 'no-store', // ★追加: 強力なキャッシュ無効化（常に最新を取得）
+                redirect: 'follow', // GASの仕様対応
                 body: JSON.stringify({ action: action, data: data })
             });
             
-            // GASからの返答（JSON）を受け取って返す
             const result = await response.json();
             return result;
         } catch (error) {
             console.error("Fetchエラー:", error);
+            // 画面にもエラー原因が出るようにアラートを追加
+            alert("通信エラーが発生しました: " + error.message);
             return { success: false, error: "サーバーとの通信に失敗しました" };
         }
     }
 }
 window.Database = Database;
 </script>
+</body>
+</html>
