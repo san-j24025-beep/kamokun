@@ -141,23 +141,66 @@
                 <input type="checkbox" id="anonymous" style="width: 20px; height: 20px; cursor: pointer;">
                 <label for="anonymous" style="margin: 0; cursor: pointer;">匿名で投稿する</label>
             </div>
-            <button type="submit" class="btn-submit">レビューを投稿する</button>
+            <button type="submit" class="btn-submit" id="submit-btn">レビューを投稿する</button>
         </form>
     </div>
+
+    <!-- データベース連携用iframe -->
+    <iframe src="Database.html" id="db-iframe" style="display:none;"></iframe>
+    <iframe src="Review.html" id="review-iframe" style="display:none;"></iframe>
 
     <script>
         function logout() {
             window.location.replace('logout.html');
         }
 
-        function submitReview(event) {
+        async function submitReview(event) {
             event.preventDefault();
+            
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.innerText = "送信中...";
+
+            const category = document.getElementById('category').value.trim();
+            const subject = document.getElementById('subject').value.trim();
+            const rating = document.getElementById('rating').value;
+            const comment = document.getElementById('comment').value.trim();
             const isAnonymous = document.getElementById('anonymous').checked;
-            // 匿名フラグを保存
+            
             const currentUser = getStoredUser() || { studentId: 'ゲスト' };
             saveCurrentUser(currentUser, isAnonymous);
-            alert("投稿が完了しました！（一覧へ遷移します）");
-            window.location.href = 'view.html';
+
+            const postUserId = isAnonymous ? '匿名' : currentUser.studentId;
+            const fullSubject = category ? `【${category}】${subject}` : subject;
+
+            try {
+                const dbFrame = document.getElementById('db-iframe').contentWindow;
+                const reviewFrame = document.getElementById('review-iframe').contentWindow;
+                
+                if (!dbFrame.Database || !reviewFrame.Review) {
+                    throw new Error("システムの初期化に失敗しました。少し待ってから再度お試しください。");
+                }
+
+                const db = new dbFrame.Database();
+                const reviewAPI = new reviewFrame.Review(db);
+
+                // レビュー作成処理の実行
+                const result = await reviewAPI.create(postUserId, fullSubject, rating, comment);
+
+                if (result.success || result.status === 'success' || !result.error) {
+                    alert("投稿が完了しました！（一覧へ遷移します）");
+                    window.location.href = 'view.html';
+                } else {
+                    alert("エラー: " + (result.error || "投稿に失敗しました"));
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = "レビューを投稿する";
+                }
+            } catch (e) {
+                console.error("エラー:", e);
+                alert("通信エラーが発生しました。");
+                submitBtn.disabled = false;
+                submitBtn.innerText = "レビューを投稿する";
+            }
         }
     </script>
 </body>

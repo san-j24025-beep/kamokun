@@ -209,6 +209,12 @@
             font-weight: 600;
             font-size: 14px;
         }
+        .loading-message {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
+            font-size: 18px;
+        }
     </style>
 </head>
 <body>
@@ -229,77 +235,52 @@
         <h2>みんなのレビュー一覧</h2>
         
         <div id="reviews-container">
-            <!-- 読み込み中のダミー表示 -->
-            <div class="review-card">
-                <div class="review-header">
-                    <span>投稿者: t23xxx</span>
-                    <span>2026/07/14</span>
-                </div>
-                <div class="review-body">
-                    Webプログラミング演習の課題、難しかったけど楽しかったです！
-                </div>
-                <div class="action-area">
-                    <button class="like-btn" onclick="toggleLike(this, 1)">👍 <span class="like-count">3</span></button>
-                    <button class="pin-btn" onclick="togglePin(this, 1)">☆</button>
-                </div>
-                <div class="comment-section">
-                    <ul class="comment-list" id="comments-1">
-                        <li class="comment-item" data-author="t23abc"><span class="comment-user" onclick="startReplyToComment(event)">t23abc:</span> それな！めちゃめちゃ苦戦しました。</li>
-                    </ul>
-                    <div class="comment-form">
-                        <input type="text" class="comment-input" placeholder="コメントを入力..." id="input-1">
-                        <button class="comment-submit" onclick="postComment(1)">送信</button>
-                    </div>
-                </div>
-            </div>
+            <div class="loading-message">読み込み中...</div>
         </div>
     </div>
 
+    <!-- データベース連携用iframe -->
+    <iframe src="Database.html" id="db-iframe" style="display:none;"></iframe>
+    <iframe src="Review.html" id="review-iframe" style="display:none;"></iframe>
+
     <script>
         const currentUser = getStoredUser() || { studentId: 'ゲスト', isAnonymous: false };
-        const likedReviews = new Set(); // ユーザーが既にいいねした投稿を記録
+        const likedReviews = new Set(); 
 
         function logout() {
             window.location.replace('logout.html');
         }
 
-        // botの名前かどうかを判定
         function isBot(studentId) {
+            if (!studentId) return false;
             const botKeywords = ['bot', 'システム', 'admin', 'test_bot'];
             return botKeywords.some(keyword => studentId.toLowerCase().includes(keyword.toLowerCase()));
         }
 
-        // いいねボタンをトグル（押すと状態が切り替わる）
         function toggleLike(button, reviewId) {
             const countSpan = button.querySelector('.like-count');
             let currentLikes = parseInt(countSpan.innerText);
             
             if (likedReviews.has(reviewId)) {
-                // いいね済みの場合は解除
                 currentLikes -= 1;
                 likedReviews.delete(reviewId);
                 button.classList.remove('liked');
             } else {
-                // いいねしていない場合は追加
                 currentLikes += 1;
                 likedReviews.add(reviewId);
                 button.classList.add('liked');
             }
             
             countSpan.innerText = currentLikes;
-            
-            // アニメーション
             button.style.transform = 'scale(1.1)';
             setTimeout(() => button.style.transform = 'scale(1)', 150);
         }
 
-        // コメント投稿
         function postComment(reviewId) {
             const input = document.getElementById(`input-${reviewId}`);
             const commentText = input.value.trim();
             if (!commentText) return;
 
-            // botのコメントは投稿しない
             if (isBot(currentUser.studentId)) {
                 alert('botユーザーはコメントを投稿できません');
                 return;
@@ -309,7 +290,6 @@
             const li = document.createElement('li');
             li.className = 'comment-item';
             
-            // 投稿者名を表示
             const userName = currentUser.isAnonymous ? '匿名' : currentUser.studentId;
             li.innerHTML = `<span class="comment-user" onclick="startReplyToComment(event)">${escapeHTML(userName)}:</span> ${escapeHTML(commentText)}`;
             li.setAttribute('data-author', currentUser.studentId);
@@ -318,7 +298,6 @@
             input.value = '';
         }
 
-        // 投稿者名をクリックで返信フォーム表示
         function startReplyToComment(event) {
             event.preventDefault();
             const commentItem = event.target.closest('.comment-item');
@@ -340,14 +319,12 @@
             }
         }
 
-        // 返信投稿
         function postReply(event, commentId, authorName) {
             event.preventDefault();
             const replyInput = document.getElementById(`reply-${commentId}`);
             const replyText = replyInput.value.trim();
             if (!replyText) return;
 
-            // botの返信は投稿しない
             if (isBot(currentUser.studentId)) {
                 alert('botユーザーは返信を投稿できません');
                 return;
@@ -364,41 +341,37 @@
             replyForm.remove();
         }
 
-        // HTMLエスケープ
         function escapeHTML(str) {
-            return str.replace(/[&<>'"]/g, 
+            if (!str) return '';
+            return str.toString().replace(/[&<>'"]/g, 
                 tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
             );
         }
 
-        // ピン止めボタン
         function togglePin(button, reviewId) {
             if (button.classList.contains('pinned')) {
-                // ピン止め解除
                 button.classList.remove('pinned');
                 button.textContent = '☆';
                 localStorage.removeItem(`pinned-${reviewId}`);
             } else {
-                // ピン止め
                 button.classList.add('pinned');
                 button.textContent = '★';
                 localStorage.setItem(`pinned-${reviewId}`, 'true');
             }
         }
 
-        // ピン止め状態を復元
         function restorePinState() {
             const reviews = document.querySelectorAll('.review-card');
-            reviews.forEach((review, index) => {
+            reviews.forEach((review) => {
+                const reviewId = review.id.replace('review-', '');
                 const pinBtn = review.querySelector('.pin-btn');
-                if (pinBtn && localStorage.getItem(`pinned-${index + 1}`) === 'true') {
+                if (pinBtn && localStorage.getItem(`pinned-${reviewId}`) === 'true') {
                     pinBtn.classList.add('pinned');
                     pinBtn.textContent = '★';
                 }
             });
         }
 
-        // レビューをいいね数でソート
         function sortReviewsByLikes() {
             const container = document.getElementById('reviews-container');
             const reviews = Array.from(container.querySelectorAll('.review-card'));
@@ -412,34 +385,113 @@
             reviews.forEach(review => container.appendChild(review));
         }
 
-        // 初期化処理
-        document.addEventListener('DOMContentLoaded', function() {
-            // botコメント及び投稿を排除
-            const reviews = document.querySelectorAll('.review-card');
-            reviews.forEach(review => {
-                const header = review.querySelector('.review-header');
-                const authorText = header.innerText;
-                
-                // botの投稿は非表示
-                if (isBot(authorText)) {
-                    review.style.display = 'none';
+        // 星マークを生成する関数
+        function getStars(rating) {
+            const num = parseInt(rating) || 3;
+            return '★'.repeat(num) + '☆'.repeat(5 - num);
+        }
+
+        // iframeのロード完了を待つヘルパー
+        function waitForIframeLoad(iframeId) {
+            return new Promise(resolve => {
+                const iframe = document.getElementById(iframeId);
+                if (iframe.contentWindow && iframe.contentWindow.document.readyState === 'complete') {
+                    resolve();
+                } else {
+                    iframe.addEventListener('load', resolve, { once: true });
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            const container = document.getElementById('reviews-container');
+
+            try {
+                // iframeの読み込みを待機
+                await Promise.all([
+                    waitForIframeLoad('db-iframe'),
+                    waitForIframeLoad('review-iframe')
+                ]);
+
+                const dbFrame = document.getElementById('db-iframe').contentWindow;
+                const reviewFrame = document.getElementById('review-iframe').contentWindow;
+
+                if (!dbFrame.Database || !reviewFrame.Review) {
+                    throw new Error("モジュールの読み込みに失敗しました");
                 }
 
-                // bot的コメントは非表示
-                const comments = review.querySelectorAll('.comment-item');
-                comments.forEach(comment => {
-                    const author = comment.getAttribute('data-author') || comment.querySelector('.comment-user')?.innerText?.replace(':', '');
-                    if (isBot(author)) {
-                        comment.style.display = 'none';
-                    }
+                const db = new dbFrame.Database();
+                const reviewAPI = new reviewFrame.Review(db);
+
+                // データベースからデータ取得
+                const result = await reviewAPI.getAll();
+
+                let reviewsData = [];
+                if (result && result.data) {
+                    reviewsData = result.data;
+                } else if (Array.isArray(result)) {
+                    reviewsData = result;
+                }
+
+                if (reviewsData.length === 0) {
+                    container.innerHTML = '<div class="loading-message">投稿されたレビューはまだありません。</div>';
+                    return;
+                }
+
+                container.innerHTML = ''; // 読み込み中表示をクリア
+
+                // 取得したデータをループしてカードを生成
+                reviewsData.forEach((review, index) => {
+                    const author = review.studentId || '不明';
+                    
+                    // botの投稿はスキップ
+                    if (isBot(author)) return;
+
+                    const reviewId = review.id || `gen-${index}`;
+                    const subject = review.subject || '未設定';
+                    const rating = review.rating || 3;
+                    const comment = review.comment || '';
+                    const date = review.createdAt || new Date().toLocaleDateString();
+
+                    const cardHTML = `
+                        <div class="review-card" id="review-${reviewId}">
+                            <div class="review-header">
+                                <span>投稿者: ${escapeHTML(author)}</span>
+                                <span>${escapeHTML(date)}</span>
+                            </div>
+                            <div class="review-body">
+                                <strong>${escapeHTML(subject)}</strong><br>
+                                <span style="color: #d69e2e; font-size: 14px;">おすすめ度: ${getStars(rating)}</span><br><br>
+                                ${escapeHTML(comment).replace(/\n/g, '<br>')}
+                            </div>
+                            <div class="action-area">
+                                <button class="like-btn" onclick="toggleLike(this, '${reviewId}')">👍 <span class="like-count">0</span></button>
+                                <button class="pin-btn" onclick="togglePin(this, '${reviewId}')">☆</button>
+                            </div>
+                            <div class="comment-section">
+                                <ul class="comment-list" id="comments-${reviewId}"></ul>
+                                <div class="comment-form">
+                                    <input type="text" class="comment-input" placeholder="コメントを入力..." id="input-${reviewId}">
+                                    <button class="comment-submit" onclick="postComment('${reviewId}')">送信</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    container.insertAdjacentHTML('beforeend', cardHTML);
                 });
-            });
 
-            // レビューをいいね数でソート
-            sortReviewsByLikes();
+                if (container.children.length === 0) {
+                    container.innerHTML = '<div class="loading-message">表示できるレビューがありません。</div>';
+                }
 
-            // ピン止め状態を復元
-            restorePinState();
+                // 描画完了後にピン止め状態復元とソートを実行
+                restorePinState();
+                sortReviewsByLikes();
+
+            } catch (error) {
+                console.error("データの取得に失敗:", error);
+                container.innerHTML = '<div class="loading-message" style="color: #e53e3e;">レビューの取得に失敗しました。<br>通信状況を確認してください。</div>';
+            }
         });
     </script>
 </body>
