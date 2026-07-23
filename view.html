@@ -99,10 +99,6 @@
             gap: 4px;
             transition: all 0.2s;
         }
-        .like-btn:hover:not(:disabled) {
-            background: #f7fafc;
-            transform: scale(1.05);
-        }
         .pin-btn {
             background: none;
             border: none;
@@ -113,9 +109,6 @@
             transition: all 0.2s;
             line-height: 1;
         }
-        .pin-btn:hover {
-            transform: scale(1.15);
-        }
         .loading-message { text-align: center; padding: 40px; color: #718096; font-size: 18px; }
     </style>
 </head>
@@ -124,7 +117,7 @@
         <a href="index.html" class="logo">かもくん</a>
         <nav class="nav-menu">
             <a href="index.html" class="nav-link">メニュー選択</a>
-            <a href="view.html" class="nav-link active">レビュー一覧</a>
+            <a href="View.html" class="nav-link active">レビュー一覧</a>
             <a href="report.html" class="nav-link">レビュー投稿</a>
             <a href="pin.html" class="nav-link">📌 ピン止め済み</a>
             <button class="btn-logout" onclick="logout()">ログアウト</button>
@@ -138,7 +131,7 @@
         </div>
     </div>
 
-    <!-- ★実際のファイル名に合わせて、頭文字を大文字に戻しました -->
+    <!-- 画像のファイル名に合わせて大文字を使用 -->
     <iframe src="Database.html" id="db-iframe" style="display:none;"></iframe>
     <iframe src="Review.html" id="review-iframe" style="display:none;"></iframe>
 
@@ -163,14 +156,16 @@
             return '★'.repeat(num) + '☆'.repeat(5 - num);
         }
 
-        function waitForIframeLoad(iframeId) {
+        // ★修正ポイント: ファイルの中身が完全に読み込まれるまで待つ処理に強化
+        function waitForIframeLoad(iframeId, targetObjectName) {
             return new Promise(resolve => {
-                const iframe = document.getElementById(iframeId);
-                if (iframe.contentWindow && iframe.contentWindow.document.readyState === 'complete') {
-                    resolve();
-                } else {
-                    iframe.addEventListener('load', resolve, { once: true });
-                }
+                const checkInterval = setInterval(() => {
+                    const iframe = document.getElementById(iframeId);
+                    if (iframe && iframe.contentWindow && iframe.contentWindow[targetObjectName]) {
+                        clearInterval(checkInterval);
+                        resolve();
+                    }
+                }, 50); // 50ミリ秒ごとにチェック
             });
         }
 
@@ -178,19 +173,14 @@
             const container = document.getElementById('reviews-container');
 
             try {
-                // iframeの読み込み完了を待機
+                // iframeの中の 'Database' と 'Review' が準備できるまで確実に待機
                 await Promise.all([
-                    waitForIframeLoad('db-iframe'),
-                    waitForIframeLoad('review-iframe')
+                    waitForIframeLoad('db-iframe', 'Database'),
+                    waitForIframeLoad('review-iframe', 'Review')
                 ]);
 
                 const dbFrame = document.getElementById('db-iframe').contentWindow;
                 const reviewFrame = document.getElementById('review-iframe').contentWindow;
-
-                // ファイルが見つからず正しく読み込めなかった場合のエラー処理
-                if (!dbFrame.Database || !reviewFrame.Review) {
-                    throw new Error("データベース接続用ファイルの読み込みに失敗しました。ファイル名を確認してください。");
-                }
 
                 const db = new dbFrame.Database();
                 const reviewAPI = new reviewFrame.Review(db);
@@ -236,7 +226,8 @@
                             </div>
                             <div class="review-body">
                                 <strong>${escapeHTML(subject)}</strong><br>
-                                <span style="color: #d69e2e; font-size: 14px;">おすすめ度: ${getStars(rating)}</span><br><br>${escapeHTML(comment).replace(/\n/g, '<br>')}
+                                <span style="color: #d69e2e; font-size: 14px;">おすすめ度: ${getStars(rating)}</span><br><br>
+                                ${escapeHTML(comment).replace(/\n/g, '<br>')}
                             </div>
                             <div class="action-area">
                                 <button class="like-btn" onclick="alert('いいね機能は準備中です')">👍 <span class="like-count">0</span></button>
