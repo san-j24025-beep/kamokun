@@ -13,7 +13,6 @@
         })();
     </script>
     <style>
-        /* ヘッダー直貼りデザイン */
         .direct-header {
             background: #1a202c;
             padding: 15px 40px;
@@ -53,7 +52,6 @@
             font-weight: bold;
             font-size: 14px;
         }
-        /* レビューカードデザイン */
         .review-card {
             background: #ffffff;
             border-radius: 12px;
@@ -89,11 +87,13 @@
         .action-left {
             display: flex;
             gap: 10px;
+            align-items: center;
         }
+        /* ★いいねボタン（オフ・オン時のスタイル） */
         .like-btn {
             background: #fff;
-            border: 1px solid #e2e8f0;
-            padding: 5px 12px;
+            border: 1px solid #cbd5e0;
+            padding: 5px 14px;
             border-radius: 20px;
             cursor: pointer;
             font-size: 14px;
@@ -101,16 +101,24 @@
             color: #4a5568;
             transition: all 0.2s;
         }
-        .like-btn:hover:not(:disabled) {
-            background: #edf2f7;
+        .like-btn.liked {
+            background: #ebf8ff;
+            border-color: #3182ce;
+            color: #3182ce;
         }
+        /* ★ピン留めボタン（オフ・オン時のスタイル） */
         .pin-btn {
             background: none;
             border: none;
-            color: #a0aec0;
+            color: #cbd5e0;
             cursor: pointer;
-            font-size: 18px;
-            padding: 2px;
+            font-size: 22px;
+            padding: 0 5px;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+        .pin-btn.active {
+            color: #ecc94b;
         }
         .delete-btn {
             background: none;
@@ -178,7 +186,7 @@
             });
         }
 
-        // 削除処理の関数
+        // 削除処理
         window.deletePost = async function(studentId, createdAt, reviewId) {
             if (!confirm("本当にこの投稿を削除しますか？\n（この操作は元に戻せません）")) return;
 
@@ -212,12 +220,16 @@
             }
         };
 
-        // ★追加：いいね処理の関数
+        // ★修正：いいねの1人1回トグル処理
         window.likePost = async function(studentId, createdAt, reviewId) {
             const btn = document.querySelector(`#review-${reviewId} .like-btn`);
-            if(btn) {
-                btn.disabled = true; // 連打防止
-            }
+            if (!btn) return;
+
+            let likedPosts = JSON.parse(localStorage.getItem('likedPosts') || '[]');
+            const postKey = `${studentId}_${createdAt}`;
+            const isLiked = likedPosts.includes(postKey);
+
+            btn.disabled = true;
 
             try {
                 const dbFrame = document.getElementById('db-iframe').contentWindow;
@@ -225,21 +237,52 @@
                 const db = new dbFrame.Database();
                 const reviewAPI = new reviewFrame.Review(db);
 
-                const result = await reviewAPI.like(studentId, createdAt);
+                const result = await reviewAPI.toggleLike(studentId, createdAt, isLiked);
 
                 if (result.success) {
-                    // いいねが成功したらボタンの数字を更新
-                    if(btn) {
-                        btn.innerHTML = `👍 ${result.likes}`;
-                        btn.disabled = false;
+                    if (isLiked) {
+                        // いいね解除
+                        likedPosts = likedPosts.filter(key => key !== postKey);
+                        btn.classList.remove('liked');
+                    } else {
+                        // いいね追加
+                        likedPosts.push(postKey);
+                        btn.classList.add('liked');
                     }
+                    localStorage.setItem('likedPosts', JSON.stringify(likedPosts));
+                    btn.innerHTML = `👍 ${result.likes}`;
                 } else {
                     throw new Error(result.error);
                 }
             } catch(error) {
-                alert("いいねに失敗しました: " + error.message);
-                if(btn) btn.disabled = false;
+                alert("処理に失敗しました: " + error.message);
+            } finally {
+                btn.disabled = false;
             }
+        };
+
+        // ★ピン留めトグル処理
+        window.togglePin = function(reviewDataEncoded, reviewId) {
+            const review = JSON.parse(decodeURIComponent(reviewDataEncoded));
+            let pinnedList = JSON.parse(localStorage.getItem('pinnedReviews') || '[]');
+            
+            const index = pinnedList.findIndex(item => item.studentId === review.studentId && item.createdAt === review.createdAt);
+            const btn = document.querySelector(`#review-${reviewId} .pin-btn`);
+
+            if (index >= 0) {
+                pinnedList.splice(index, 1);
+                if(btn) {
+                    btn.classList.remove('active');
+                    btn.innerHTML = '☆';
+                }
+            } else {
+                pinnedList.push(review);
+                if(btn) {
+                    btn.classList.add('active');
+                    btn.innerHTML = '★';
+                }
+            }
+            localStorage.setItem('pinnedReviews', JSON.stringify(pinnedList));
         };
 
         document.addEventListener('DOMContentLoaded', async function() {
@@ -247,6 +290,10 @@
             
             const currentUser = (typeof getStoredUser === 'function') ? getStoredUser() : null;
             const currentStudentId = currentUser ? currentUser.studentId : '';
+
+            // ローカルストレージから「いいね」「お気に入り」の状態を取得
+            const likedPosts = JSON.parse(localStorage.getItem('likedPosts') || '[]');
+            const pinnedList = JSON.parse(localStorage.getItem('pinnedReviews') || '[]');
 
             try {
                 await Promise.all([
@@ -277,12 +324,24 @@
                     const rating = review.rating || 3;
                     const comment = review.comment || '';
                     const date = review.createdAt || '';
-                    const likes = review.likes || 0; // ★追加：いいね数を取得
+                    const likes = review.likes || 0; // デフォルトは0
+
+                    // 1人1回いいね判定
+                    const postKey = `${author}_${date}`;
+                    const isLiked = likedPosts.includes(postKey);
+                    const likeClass = isLiked ? 'like-btn liked' : 'like-btn';
+
+                    // ピン留め判定
+                    const isPinned = pinnedList.some(item => item.studentId === author && item.createdAt === date);
+                    const pinIcon = isPinned ? '★' : '☆';
+                    const pinClass = isPinned ? 'pin-btn active' : 'pin-btn';
 
                     const isMyPost = (currentStudentId === author);
                     const deleteBtnHTML = isMyPost 
                         ? `<button class="delete-btn" onclick="deletePost('${author}', '${date}', '${reviewId}')">🗑️ 削除</button>` 
                         : '';
+
+                    const encodedReview = encodeURIComponent(JSON.stringify(review));
 
                     const cardHTML = `
                         <div class="review-card" id="review-${reviewId}">
@@ -297,9 +356,8 @@
                             </div>
                             <div class="action-area">
                                 <div class="action-left">
-                                    <!-- ★変更：いいねボタンに関数をセットし、数字を反映 -->
-                                    <button class="like-btn" onclick="likePost('${author}', '${date}', '${reviewId}')">👍 ${likes}</button>
-                                    <button class="pin-btn" onclick="alert('ピン留め機能は準備中です')">☆</button>
+                                    <button class="${likeClass}" onclick="likePost('${author}', '${date}', '${reviewId}')">👍 ${likes}</button>
+                                    <button class="${pinClass}" onclick="togglePin('${encodedReview}', '${reviewId}')">${pinIcon}</button>
                                 </div>
                                 ${deleteBtnHTML}
                             </div>

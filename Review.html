@@ -20,9 +20,9 @@ class Review {
         return await this.db.request('deleteReview', { studentId, createdAt });
     }
 
-    // ★追加: いいね用のAPI呼び出し
-    async like(studentId, createdAt) {
-        return await this.db.request('likeReview', { studentId, createdAt });
+    // ★修正: いいね切り替え用API
+    async toggleLike(studentId, createdAt, isLiked) {
+        return await this.db.request('toggleLikeReview', { studentId, createdAt, isLiked });
     }
 }
 window.Review = Review;
