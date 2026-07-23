@@ -15,6 +15,11 @@ class Review {
     async getAll() {
         return await this.db.request('getAllReviews', {});
     }
+
+    // ★追加: 削除用のAPI呼び出し
+    async delete(studentId, createdAt) {
+        return await this.db.request('deleteReview', { studentId, createdAt });
+    }
 }
 window.Review = Review;
 </script>

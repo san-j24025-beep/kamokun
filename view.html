@@ -61,6 +61,7 @@
             margin-bottom: 20px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
             border: 1px solid #e2e8f0;
+            transition: opacity 0.3s;
         }
         .review-header {
             display: flex;
@@ -83,7 +84,11 @@
             justify-content: space-between;
             border-top: 1px solid #edf2f7;
             padding-top: 12px;
-            margin-bottom: 15px;
+            margin-bottom: 5px;
+        }
+        .action-left {
+            display: flex;
+            gap: 10px;
         }
         .like-btn {
             background: #fff;
@@ -94,9 +99,6 @@
             font-size: 14px;
             font-weight: bold;
             color: #4a5568;
-            display: flex;
-            align-items: center;
-            gap: 4px;
             transition: all 0.2s;
         }
         .pin-btn {
@@ -106,8 +108,21 @@
             cursor: pointer;
             font-size: 18px;
             padding: 2px;
-            transition: all 0.2s;
-            line-height: 1;
+        }
+        /* ★追加：削除ボタンのデザイン */
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #e53e3e;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            padding: 5px;
+            transition: opacity 0.2s;
+        }
+        .delete-btn:hover {
+            text-decoration: underline;
+            opacity: 0.8;
         }
         .loading-message { text-align: center; padding: 40px; color: #718096; font-size: 18px; }
     </style>
@@ -131,19 +146,12 @@
         </div>
     </div>
 
-    <!-- 画像のファイル名に合わせて大文字を使用 -->
     <iframe src="Database.html" id="db-iframe" style="display:none;"></iframe>
     <iframe src="Review.html" id="review-iframe" style="display:none;"></iframe>
 
     <script>
         function logout() { window.location.replace('logout.html'); }
         
-        function isBot(studentId) {
-            if (!studentId) return false;
-            const botKeywords = ['bot', 'システム', 'admin', 'test_bot'];
-            return botKeywords.some(keyword => studentId.toLowerCase().includes(keyword.toLowerCase()));
-        }
-
         function escapeHTML(str) {
             if (!str) return '';
             return str.toString().replace(/[&<>'"]/g, 
@@ -156,7 +164,6 @@
             return '★'.repeat(num) + '☆'.repeat(5 - num);
         }
 
-        // ★修正ポイント: ファイルの中身が完全に読み込まれるまで待つ処理に強化
         function waitForIframeLoad(iframeId, targetObjectName) {
             return new Promise(resolve => {
                 const checkInterval = setInterval(() => {
@@ -165,15 +172,54 @@
                         clearInterval(checkInterval);
                         resolve();
                     }
-                }, 50); // 50ミリ秒ごとにチェック
+                }, 50);
             });
         }
 
-        document.addEventListener('DOMContentLoaded', async function() {
-            const container = document.getElementById('reviews-container');
+        // ★追加：削除処理の関数
+        window.deletePost = async function(studentId, createdAt, reviewId) {
+            if (!confirm("本当にこの投稿を削除しますか？\n（この操作は元に戻せません）")) return;
+
+            const btn = document.querySelector(`#review-${reviewId} .delete-btn`);
+            if(btn) {
+                btn.innerText = "削除中...";
+                btn.disabled = true;
+            }
 
             try {
-                // iframeの中の 'Database' と 'Review' が準備できるまで確実に待機
+                // iframeからAPIを取得して実行
+                const dbFrame = document.getElementById('db-iframe').contentWindow;
+                const reviewFrame = document.getElementById('review-iframe').contentWindow;
+                const db = new dbFrame.Database();
+                const reviewAPI = new reviewFrame.Review(db);
+
+                const result = await reviewAPI.delete(studentId, createdAt);
+
+                if (result.success) {
+                    // 画面から該当のレビューをふんわり消す
+                    const card = document.getElementById(`review-${reviewId}`);
+                    card.style.opacity = '0';
+                    setTimeout(() => card.remove(), 300);
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch(error) {
+                alert("削除に失敗しました: " + error.message);
+                if(btn) {
+                    btn.innerText = "🗑️ 削除";
+                    btn.disabled = false;
+                }
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            const container = document.getElementById('reviews-container');
+            
+            // 現在ログイン中のユーザー情報を取得
+            const currentUser = (typeof getStoredUser === 'function') ? getStoredUser() : null;
+            const currentStudentId = currentUser ? currentUser.studentId : '';
+
+            try {
                 await Promise.all([
                     waitForIframeLoad('db-iframe', 'Database'),
                     waitForIframeLoad('review-iframe', 'Review')
@@ -181,25 +227,13 @@
 
                 const dbFrame = document.getElementById('db-iframe').contentWindow;
                 const reviewFrame = document.getElementById('review-iframe').contentWindow;
-
                 const db = new dbFrame.Database();
                 const reviewAPI = new reviewFrame.Review(db);
 
-                // APIリクエスト実行（GASからデータを取得）
                 const result = await reviewAPI.getAll();
+                if (result.success === false) throw new Error(result.error || "GASエラー");
 
-                // エラーレスポンスが返ってきているかのチェック
-                if (result.success === false) {
-                     throw new Error(result.error || "GAS側でエラーが発生しました");
-                }
-
-                let reviewsData = [];
-                if (result && result.data) {
-                    reviewsData = result.data;
-                } else if (Array.isArray(result)) {
-                    reviewsData = result;
-                }
-
+                let reviewsData = result.data || result || [];
                 if (reviewsData.length === 0) {
                     container.innerHTML = '<div class="loading-message">投稿されたレビューはまだありません。</div>';
                     return;
@@ -207,16 +241,19 @@
 
                 container.innerHTML = '';
 
-                // 取得したデータを画面に表示
                 reviewsData.forEach((review, index) => {
                     const author = review.studentId || '不明';
-                    if (isBot(author)) return;
-
                     const reviewId = review.id || `gen-${index}`;
                     const subject = review.subject || '未設定';
                     const rating = review.rating || 3;
                     const comment = review.comment || '';
                     const date = review.createdAt || '';
+
+                    // ★追加：自分の投稿かどうかを判定して削除ボタンを作る
+                    const isMyPost = (currentStudentId === author);
+                    const deleteBtnHTML = isMyPost 
+                        ? `<button class="delete-btn" onclick="deletePost('${author}', '${date}', '${reviewId}')">🗑️ 削除</button>` 
+                        : '';
 
                     const cardHTML = `
                         <div class="review-card" id="review-${reviewId}">
@@ -230,8 +267,11 @@
                                 ${escapeHTML(comment).replace(/\n/g, '<br>')}
                             </div>
                             <div class="action-area">
-                                <button class="like-btn" onclick="alert('いいね機能は準備中です')">👍 <span class="like-count">0</span></button>
-                                <button class="pin-btn" onclick="alert('ピン留め機能は準備中です')">☆</button>
+                                <div class="action-left">
+                                    <button class="like-btn" onclick="alert('いいね機能は準備中です')">👍 0</button>
+                                    <button class="pin-btn" onclick="alert('ピン留め機能は準備中です')">☆</button>
+                                </div>
+                                ${deleteBtnHTML}
                             </div>
                         </div>
                     `;
@@ -239,8 +279,8 @@
                 });
 
             } catch (error) {
-                console.error("データの取得に失敗:", error);
-                container.innerHTML = `<div class="loading-message" style="color: #e53e3e;">レビューの取得に失敗しました。<br>エラー詳細: ${error.message}</div>`;
+                console.error("エラー:", error);
+                container.innerHTML = `<div class="loading-message" style="color: #e53e3e;">レビューの取得に失敗しました。<br>詳細: ${error.message}</div>`;
             }
         });
     </script>
