@@ -16,9 +16,13 @@ class Review {
         return await this.db.request('getAllReviews', {});
     }
 
-    // ★追加: 削除用のAPI呼び出し
     async delete(studentId, createdAt) {
         return await this.db.request('deleteReview', { studentId, createdAt });
+    }
+
+    // ★追加: いいね用のAPI呼び出し
+    async like(studentId, createdAt) {
+        return await this.db.request('likeReview', { studentId, createdAt });
     }
 }
 window.Review = Review;

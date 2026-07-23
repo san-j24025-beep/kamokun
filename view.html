@@ -101,6 +101,9 @@
             color: #4a5568;
             transition: all 0.2s;
         }
+        .like-btn:hover:not(:disabled) {
+            background: #edf2f7;
+        }
         .pin-btn {
             background: none;
             border: none;
@@ -109,7 +112,6 @@
             font-size: 18px;
             padding: 2px;
         }
-        /* ★追加：削除ボタンのデザイン */
         .delete-btn {
             background: none;
             border: none;
@@ -134,7 +136,7 @@
             <a href="index.html" class="nav-link">メニュー選択</a>
             <a href="View.html" class="nav-link active">レビュー一覧</a>
             <a href="report.html" class="nav-link">レビュー投稿</a>
-            <a href="pin.html" class="nav-link">📌 ピン止め済み</a>
+            <a href="pin.html" class="nav-link">☆お気に入りリスト</a>
             <button class="btn-logout" onclick="logout()">ログアウト</button>
         </nav>
     </header>
@@ -176,7 +178,7 @@
             });
         }
 
-        // ★追加：削除処理の関数
+        // 削除処理の関数
         window.deletePost = async function(studentId, createdAt, reviewId) {
             if (!confirm("本当にこの投稿を削除しますか？\n（この操作は元に戻せません）")) return;
 
@@ -187,7 +189,6 @@
             }
 
             try {
-                // iframeからAPIを取得して実行
                 const dbFrame = document.getElementById('db-iframe').contentWindow;
                 const reviewFrame = document.getElementById('review-iframe').contentWindow;
                 const db = new dbFrame.Database();
@@ -196,7 +197,6 @@
                 const result = await reviewAPI.delete(studentId, createdAt);
 
                 if (result.success) {
-                    // 画面から該当のレビューをふんわり消す
                     const card = document.getElementById(`review-${reviewId}`);
                     card.style.opacity = '0';
                     setTimeout(() => card.remove(), 300);
@@ -212,10 +212,39 @@
             }
         };
 
+        // ★追加：いいね処理の関数
+        window.likePost = async function(studentId, createdAt, reviewId) {
+            const btn = document.querySelector(`#review-${reviewId} .like-btn`);
+            if(btn) {
+                btn.disabled = true; // 連打防止
+            }
+
+            try {
+                const dbFrame = document.getElementById('db-iframe').contentWindow;
+                const reviewFrame = document.getElementById('review-iframe').contentWindow;
+                const db = new dbFrame.Database();
+                const reviewAPI = new reviewFrame.Review(db);
+
+                const result = await reviewAPI.like(studentId, createdAt);
+
+                if (result.success) {
+                    // いいねが成功したらボタンの数字を更新
+                    if(btn) {
+                        btn.innerHTML = `👍 ${result.likes}`;
+                        btn.disabled = false;
+                    }
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch(error) {
+                alert("いいねに失敗しました: " + error.message);
+                if(btn) btn.disabled = false;
+            }
+        };
+
         document.addEventListener('DOMContentLoaded', async function() {
             const container = document.getElementById('reviews-container');
             
-            // 現在ログイン中のユーザー情報を取得
             const currentUser = (typeof getStoredUser === 'function') ? getStoredUser() : null;
             const currentStudentId = currentUser ? currentUser.studentId : '';
 
@@ -248,8 +277,8 @@
                     const rating = review.rating || 3;
                     const comment = review.comment || '';
                     const date = review.createdAt || '';
+                    const likes = review.likes || 0; // ★追加：いいね数を取得
 
-                    // ★追加：自分の投稿かどうかを判定して削除ボタンを作る
                     const isMyPost = (currentStudentId === author);
                     const deleteBtnHTML = isMyPost 
                         ? `<button class="delete-btn" onclick="deletePost('${author}', '${date}', '${reviewId}')">🗑️ 削除</button>` 
@@ -268,7 +297,8 @@
                             </div>
                             <div class="action-area">
                                 <div class="action-left">
-                                    <button class="like-btn" onclick="alert('いいね機能は準備中です')">👍 0</button>
+                                    <!-- ★変更：いいねボタンに関数をセットし、数字を反映 -->
+                                    <button class="like-btn" onclick="likePost('${author}', '${date}', '${reviewId}')">👍 ${likes}</button>
                                     <button class="pin-btn" onclick="alert('ピン留め機能は準備中です')">☆</button>
                                 </div>
                                 ${deleteBtnHTML}
