@@ -8,6 +8,35 @@ function doPost(e) {
     const SPREADSHEET_ID = props.getProperty('SPREADSHEET_ID') || '';
 
     // helper: spreadsheet-backed storage if SPREADSHEET_ID is provided
+    // Normalize various header names (Japanese/English) to canonical keys
+    function normalizeHeader(h) {
+      if (!h) return '';
+      const s = String(h).toLowerCase().replace(/\s|\u00A0/g,'');
+      const map = {
+        // users
+        '学籍番号':'studentid','studentid':'studentid','id':'studentid',
+        '学年':'grade','grade':'grade',
+        '登録日時':'registeredat','registeredat':'registeredat','投稿日時':'createdat','createdat':'createdat',
+        'passwordhash':'passwordhash','パスワードハッシュ':'passwordhash','password':'passwordhash',
+        'role':'role','役割':'role','表示名':'displayname','displayname':'displayname',
+        // reviews
+        '科目名':'subject','subject':'subject',
+        '評価':'rating','rating':'rating',
+        '感想':'comment','comment':'comment',
+        '小テスト・レポート割合':'reportratio','小テストレポート割合':'reportratio','reportratio':'reportratio',
+        'likes':'likes'
+      };
+      return map[s] || s;
+    }
+
+    function canonicalToPreferredHeader(canonical) {
+      const pref = {
+        'studentid':'学籍番号', 'grade':'学年', 'registeredat':'登録日時', 'passwordhash':'passwordHash', 'role':'役割', 'displayname':'表示名',
+        'id':'id', 'subject':'科目名', 'rating':'評価', 'comment':'感想', 'createdat':'投稿日時', 'reportratio':'小テスト・レポート割合', 'likes':'likes'
+      };
+      return pref[canonical] || canonical;
+    }
+
     function loadSheet(sheetName) {
       const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
       const sheet = ss.getSheetByName(sheetName);
@@ -18,7 +47,10 @@ function doPost(e) {
       const rows = values.slice(1);
       return rows.map(r => {
         const obj = {};
-        for (let i = 0; i < headers.length; i++) obj[headers[i]] = r[i];
+        for (let i = 0; i < headers.length; i++) {
+          const key = normalizeHeader(headers[i]);
+          if (key) obj[key] = r[i];
+        }
         return obj;
       });
     }
@@ -29,15 +61,15 @@ function doPost(e) {
       if (!sheet) {
         sheet = ss.insertSheet(sheetName);
       }
-      const headers = sheet.getRange(1,1,1,sheet.getLastColumn()||1).getValues()[0];
-      // if sheet empty, create headers from object keys
+      const headers = sheet.getRange(1,1,1,Math.max(1,sheet.getLastColumn())).getValues()[0];
+      // if sheet empty, create headers from preferred mapping of object keys
       if (!headers || headers.length === 0 || headers[0] === '') {
-        const keys = Object.keys(obj);
+        const keys = Object.keys(obj).map(k => canonicalToPreferredHeader(k));
         sheet.getRange(1,1,1,keys.length).setValues([keys]);
-        const values = keys.map(k => obj[k] || '');
+        const values = keys.map(h => obj[normalizeHeader(h)] || obj[h] || '');
         sheet.appendRow(values);
       } else {
-        const values = headers.map(h => obj[h] || '');
+        const values = headers.map(h => obj[normalizeHeader(h)] || obj[h] || '');
         sheet.appendRow(values);
       }
     }
@@ -46,11 +78,18 @@ function doPost(e) {
       const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
       let sheet = ss.getSheetByName(sheetName);
       if (!sheet) sheet = ss.insertSheet(sheetName);
-      const headers = Object.keys(arr[0] || {});
+      // keep existing headers if present
+      const existing = sheet.getRange(1,1,1,Math.max(1,sheet.getLastColumn())).getValues()[0];
+      let headers;
+      if (existing && existing[0] !== '') {
+        headers = existing;
+      } else {
+        headers = Object.keys(arr[0] || {}).map(k => canonicalToPreferredHeader(k));
+      }
       sheet.clearContents();
-      if (headers.length === 0) return;
+      if (!headers || headers.length === 0) return;
       sheet.getRange(1,1,1,headers.length).setValues([headers]);
-      const values = arr.map(o => headers.map(h => o[h] || ''));
+      const values = arr.map(o => headers.map(h => o[normalizeHeader(h)] || o[h] || ''));
       sheet.getRange(2,1,values.length, headers.length).setValues(values);
     }
 
