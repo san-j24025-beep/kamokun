@@ -12,6 +12,12 @@
 4. デプロイ後に表示される「Web アプリの URL」をコピーする。
 5. ローカルの `Database.html` にある `this.gasUrl = "...";` を、取得した Web アプリ URL に置き換える。
    - 例: `this.gasUrl = "https://script.google.com/macros/s/XXXXXXXX/exec";`
+6. もしスプレッドシートでユーザー・レビューを管理する場合:
+   - スプレッドシートを作成し、シート名を `users` と `reviews` にする。
+   - `users` のヘッダー例: `studentId,grade,registeredAt,passwordHash,role`
+   - `reviews` のヘッダー例: `id,studentId,subject,rating,comment,createdAt,likes`
+   - GAS プロジェクトの「プロジェクトのプロパティ」→「スクリプトのプロパティ」に `SPREADSHEET_ID` を追加し、スプレッドシートの ID を値にセットしてください。
+   - これにより `Code.gs` は `SPREADSHEET_ID` が設定されていればスプレッドシートへ読み書きします。
 6. クライアントからは `POST` で `Content-Type: text/plain` を指定し、
    本コードで扱う JSON 文字列 (`{"action":"createUser","data":{...}}`) を `body` に渡してください。
 
