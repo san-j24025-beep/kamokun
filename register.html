@@ -124,7 +124,9 @@
                 const db = new dbFrame.contentWindow.Database();
                 const res = await db.request('createUser', { studentId, password });
                 if (!res || res.success === false) {
-                    errorMsg.innerText = (res && res.error) ? res.error : '登録に失敗しました。';
+                    console.error('createUser API 応答:', res);
+                    const serverMsg = res && (res.error || res.message || JSON.stringify(res));
+                    errorMsg.innerText = serverMsg ? `登録に失敗しました: ${serverMsg}` : '登録に失敗しました。';
                     errorMsg.style.display = 'block';
                     registerBtn.disabled = false;
                     registerBtn.innerText = 'アカウントを登録する';
