@@ -133,8 +133,23 @@
                     return;
                 }
 
+                // 保存して自動ログイン（パスワードは保存しない）
+                const normalizedUser = { studentId: studentId, isAnonymous: false };
+                try {
+                    if (typeof saveCurrentUser === 'function') {
+                        saveCurrentUser(normalizedUser, false);
+                    } else if (window.parent && typeof window.parent.saveCurrentUser === 'function') {
+                        window.parent.saveCurrentUser(normalizedUser, false);
+                    } else {
+                        sessionStorage.setItem('currentUser', JSON.stringify(normalizedUser));
+                        localStorage.setItem('currentUser', JSON.stringify(normalizedUser));
+                    }
+                } catch (e) {
+                    console.warn('currentUser 保存に失敗しました:', e);
+                }
+
                 // 成功メッセージ表示
-                successMsg.innerText = 'アカウント登録が完了しました！ログイン画面へ移動します...';
+                successMsg.innerText = 'アカウント登録が完了しました！自動ログインします...';
                 successMsg.style.display = 'block';
                 registerBtn.style.backgroundColor = '#27ae60';
                 registerBtn.innerText = '登録完了';
@@ -178,8 +193,23 @@
                 console.warn('保存に失敗しました:', e);
             }
 
+            // 保存して自動ログイン（パスワードは保存しない）
+            const normalizedUser = { studentId: studentId, isAnonymous: false };
+            try {
+                if (typeof saveCurrentUser === 'function') {
+                    saveCurrentUser(normalizedUser, false);
+                } else if (window.parent && typeof window.parent.saveCurrentUser === 'function') {
+                    window.parent.saveCurrentUser(normalizedUser, false);
+                } else {
+                    sessionStorage.setItem('currentUser', JSON.stringify(normalizedUser));
+                    localStorage.setItem('currentUser', JSON.stringify(normalizedUser));
+                }
+            } catch (e) {
+                console.warn('currentUser 保存に失敗しました:', e);
+            }
+
             // 成功メッセージ表示
-            successMsg.innerText = 'アカウント登録が完了しました！ログイン画面へ移動します...';
+            successMsg.innerText = 'アカウント登録が完了しました！自動ログインします...';
             successMsg.style.display = 'block';
             registerBtn.style.backgroundColor = '#27ae60';
             registerBtn.innerText = '登録完了';
