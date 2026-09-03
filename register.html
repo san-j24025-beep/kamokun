@@ -115,47 +115,73 @@
         registerBtn.innerText = "登録処理中...";
 
         try {
-            // Database.html内の擬似DBオブジェクトを取得
+            // Database.html内のDatabaseオブジェクトや擬似DBオブジェクトを取得
             const dbFrame = window.parent.document.getElementById('db-iframe') || 
                             repoFrame.document.getElementById('db-iframe');
-            
-            let targetDb = window.parent.db || window.db;
+
+            // まずDatabase APIが使えるか試す
+            if (dbFrame && dbFrame.contentWindow && typeof dbFrame.contentWindow.Database === 'function') {
+                const db = new dbFrame.contentWindow.Database();
+                const res = await db.request('createUser', { studentId, password });
+                if (!res || res.success === false) {
+                    errorMsg.innerText = (res && res.error) ? res.error : '登録に失敗しました。';
+                    errorMsg.style.display = 'block';
+                    registerBtn.disabled = false;
+                    registerBtn.innerText = 'アカウントを登録する';
+                    return;
+                }
+
+                // 成功メッセージ表示
+                successMsg.innerText = 'アカウント登録が完了しました！ログイン画面へ移動します...';
+                successMsg.style.display = 'block';
+                registerBtn.style.backgroundColor = '#27ae60';
+                registerBtn.innerText = '登録完了';
+                setTimeout(() => { location.href = 'login.html'; }, 1500);
+                return;
+            }
+
+            // Database APIが使えない場合のフォールバック（window.db / window.parent.db）
+            let targetDb = window.parent && window.parent.db ? window.parent.db : window.db;
             if (dbFrame && dbFrame.contentWindow && dbFrame.contentWindow.db) {
                 targetDb = dbFrame.contentWindow.db;
             }
 
-            if (!targetDb || !targetDb.users) {
-                // 最悪のケース用のローカルモック作成（エラー回避）
-                if (!window.parent.db) window.parent.db = { users: [] };
-                targetDb = window.parent.db;
+            if (!targetDb || !Array.isArray(targetDb.users)) {
+                targetDb = { users: [] };
             }
 
             // 重複チェック
             const isDuplicate = targetDb.users.some(u => u.studentId === studentId);
             if (isDuplicate) {
-                errorMsg.innerText = "この学籍番号は既に登録されています。";
-                errorMsg.style.display = "block";
+                errorMsg.innerText = 'この学籍番号は既に登録されています。';
+                errorMsg.style.display = 'block';
                 registerBtn.disabled = false;
-                registerBtn.innerText = "アカウントを登録する";
+                registerBtn.innerText = 'アカウントを登録する';
                 return;
             }
 
-            // 新規ユーザーを追加
-            targetDb.users.push({
-                studentId: studentId,
-                password: password
-            });
+            // 新規ユーザーを追加して可能なら永続化
+            targetDb.users.push({ studentId: studentId, password: password });
+            try {
+                if (targetDb.save && typeof targetDb.save === 'function') {
+                    targetDb.save();
+                } else {
+                    // localStorageへ保存
+                    localStorage.setItem('kamokun_users', JSON.stringify(targetDb.users));
+                    if (window.parent && window.parent.db) window.parent.db.users = targetDb.users;
+                    window.db = window.db || {};
+                    window.db.users = targetDb.users;
+                }
+            } catch (e) {
+                console.warn('保存に失敗しました:', e);
+            }
 
             // 成功メッセージ表示
-            successMsg.innerText = "アカウント登録が完了しました！ログイン画面へ移動します...";
-            successMsg.style.display = "block";
-            registerBtn.style.backgroundColor = "#27ae60";
-            registerBtn.innerText = "登録完了";
-
-            // 1.5秒後にログイン画面へ自動遷移
-            setTimeout(() => {
-                location.href = 'login.html';
-            }, 1500);
+            successMsg.innerText = 'アカウント登録が完了しました！ログイン画面へ移動します...';
+            successMsg.style.display = 'block';
+            registerBtn.style.backgroundColor = '#27ae60';
+            registerBtn.innerText = '登録完了';
+            setTimeout(() => { location.href = 'login.html'; }, 1500);
 
         } catch (e) {
             console.error(e);

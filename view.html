@@ -337,7 +337,8 @@
                     const pinClass = isPinned ? 'pin-btn active' : 'pin-btn';
 
                     const isMyPost = (currentStudentId === author);
-                    const deleteBtnHTML = isMyPost 
+                    const isAdmin = (currentStudentId === 'J24025');
+                    const deleteBtnHTML = (isMyPost || isAdmin) 
                         ? `<button class="delete-btn" onclick="deletePost('${author}', '${date}', '${reviewId}')">🗑️ 削除</button>` 
                         : '';
 

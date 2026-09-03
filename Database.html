@@ -20,18 +20,107 @@ class Database {
                 redirect: 'follow', // GASの仕様対応
                 body: JSON.stringify({ action: action, data: data })
             });
-            
+
             const result = await response.json();
             return result;
         } catch (error) {
-            console.error("Fetchエラー:", error);
-            // 画面にもエラー原因が出るようにアラートを追加
-            alert("通信エラーが発生しました: " + error.message);
-            return { success: false, error: "サーバーとの通信に失敗しました" };
+            console.warn("Fetchエラー (フォールバック処理に切替):", error);
+            return this.localRequest(action, data);
         }
+    }
+
+    // フォールバック用のローカル処理（localStorageベース）
+    async localRequest(action, data) {
+        const USERS_KEY = 'kamokun_users';
+        const REVIEWS_KEY = 'kamokun_reviews';
+
+        const load = (key) => JSON.parse(localStorage.getItem(key) || '[]');
+        const save = (key, arr) => localStorage.setItem(key, JSON.stringify(arr));
+
+        if (action === 'createUser') {
+            const users = load(USERS_KEY);
+            const exists = users.some(u => u.studentId === data.studentId);
+            if (exists) return { success: false, error: 'この学籍番号は既に登録されています。' };
+            users.push({ studentId: data.studentId, password: data.password });
+            save(USERS_KEY, users);
+            // 他フレーム互換のためにwindow.dbを更新
+            window.db = window.db || {};
+            window.db.users = users;
+            return { success: true, data: { studentId: data.studentId } };
+        }
+
+        if (action === 'getUsers') {
+            const users = load(USERS_KEY);
+            return { success: true, data: users };
+        }
+
+        if (action === 'createReview') {
+            const reviews = load(REVIEWS_KEY);
+            const now = new Date().toISOString();
+            const id = 'r-' + Math.random().toString(36).slice(2, 9);
+            const review = Object.assign({ id: id, createdAt: now, likes: 0 }, data);
+            reviews.unshift(review);
+            save(REVIEWS_KEY, reviews);
+            return { success: true, data: review };
+        }
+
+        if (action === 'getAllReviews') {
+            const reviews = load(REVIEWS_KEY);
+            return { success: true, data: reviews };
+        }
+
+        if (action === 'deleteReview') {
+            const reviews = load(REVIEWS_KEY);
+            // 要求者をセッションストレージから取得
+            let requester = null;
+            try {
+                const s = sessionStorage.getItem('currentUser');
+                requester = s ? JSON.parse(s).studentId : null;
+            } catch (e) { requester = null; }
+
+            const targetIndex = reviews.findIndex(r => r.studentId === data.studentId && r.createdAt === data.createdAt);
+            if (targetIndex < 0) return { success: false, error: '対象の投稿が見つかりません。' };
+
+            const target = reviews[targetIndex];
+            // 削除権限チェック：作成者または管理者(J24025)
+            if (requester !== target.studentId && requester !== 'J24025') {
+                return { success: false, error: '削除権限がありません。' };
+            }
+
+            reviews.splice(targetIndex, 1);
+            save(REVIEWS_KEY, reviews);
+            return { success: true };
+        }
+
+        if (action === 'toggleLikeReview') {
+            const reviews = load(REVIEWS_KEY);
+            const idx = reviews.findIndex(r => r.studentId === data.studentId && r.createdAt === data.createdAt);
+            if (idx < 0) return { success: false, error: '投稿が見つかりません。' };
+            if (data.isLiked) {
+                reviews[idx].likes = Math.max(0, (reviews[idx].likes || 0) - 1);
+            } else {
+                reviews[idx].likes = (reviews[idx].likes || 0) + 1;
+            }
+            save(REVIEWS_KEY, reviews);
+            return { success: true, likes: reviews[idx].likes };
+        }
+
+        return { success: false, error: '未対応のアクションです: ' + action };
     }
 }
 window.Database = Database;
+
+// 簡易互換のため、localStorageの存在データをwindow.dbとして露出しておく
+(function() {
+    try {
+        const users = JSON.parse(localStorage.getItem('kamokun_users') || '[]');
+        window.db = window.db || {};
+        window.db.users = users;
+    } catch (e) {
+        window.db = window.db || {};
+        window.db.users = [];
+    }
+})();
 </script>
 </body>
 </html>
