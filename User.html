@@ -11,7 +11,9 @@ class User {
     async login(studentId, password) {
         const result = await this.db.request('login', { studentId, password });
         if (result.success) {
-            localStorage.setItem('currentUser', JSON.stringify(result.user));
+            const userJson = JSON.stringify(result.user);
+            localStorage.setItem('currentUser', userJson);
+            sessionStorage.setItem('currentUser', userJson);
             return { success: true };
         }
         return { success: false, error: result.error || "ログインに失敗しました" };
@@ -19,6 +21,7 @@ class User {
 
     logout() {
         localStorage.removeItem('currentUser');
+        sessionStorage.removeItem('currentUser');
         location.href = 'login.html';
     }
 
