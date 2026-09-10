@@ -186,6 +186,10 @@
             });
         }
 
+        function getAccountStorageKey(name, studentId) {
+            return `${name}:${encodeURIComponent(studentId || 'guest')}`;
+        }
+
         // 削除処理
         window.deletePost = async function(studentId, createdAt, reviewId) {
             if (!confirm("本当にこの投稿を削除しますか？\n（この操作は元に戻せません）")) return;
@@ -225,9 +229,10 @@
             const btn = document.querySelector(`#review-${reviewId} .like-btn`);
             if (!btn) return;
 
-            let likedPosts = JSON.parse(localStorage.getItem('likedPosts') || '[]');
-            const postKey = `${studentId}_${createdAt}`;
             const currentUser = getStoredUser() || {};
+            const likedPostsKey = getAccountStorageKey('likedPosts', currentUser.studentId);
+            let likedPosts = JSON.parse(localStorage.getItem(likedPostsKey) || '[]');
+            const postKey = `${studentId}_${createdAt}`;
 
             btn.disabled = true;
 
@@ -248,7 +253,7 @@
                         likedPosts = likedPosts.filter(key => key !== postKey);
                         btn.classList.remove('liked');
                     }
-                    localStorage.setItem('likedPosts', JSON.stringify(likedPosts));
+                    localStorage.setItem(likedPostsKey, JSON.stringify(likedPosts));
                     btn.innerHTML = `👍 ${result.likes}`;
                 } else {
                     throw new Error(result.error);
@@ -263,7 +268,9 @@
         // ★ピン留めトグル処理
         window.togglePin = function(reviewDataEncoded, reviewId) {
             const review = JSON.parse(decodeURIComponent(reviewDataEncoded));
-            let pinnedList = JSON.parse(localStorage.getItem('pinnedReviews') || '[]');
+            const currentUser = getStoredUser() || {};
+            const pinnedReviewsKey = getAccountStorageKey('pinnedReviews', currentUser.studentId);
+            let pinnedList = JSON.parse(localStorage.getItem(pinnedReviewsKey) || '[]');
             
             const index = pinnedList.findIndex(item => item.studentId === review.studentId && item.createdAt === review.createdAt);
             const btn = document.querySelector(`#review-${reviewId} .pin-btn`);
@@ -281,7 +288,7 @@
                     btn.innerHTML = '★';
                 }
             }
-            localStorage.setItem('pinnedReviews', JSON.stringify(pinnedList));
+            localStorage.setItem(pinnedReviewsKey, JSON.stringify(pinnedList));
         };
 
         document.addEventListener('DOMContentLoaded', async function() {
@@ -291,8 +298,8 @@
             const currentStudentId = currentUser ? currentUser.studentId : '';
 
             // ローカルストレージから「いいね」「お気に入り」の状態を取得
-            const likedPosts = JSON.parse(localStorage.getItem('likedPosts') || '[]');
-            const pinnedList = JSON.parse(localStorage.getItem('pinnedReviews') || '[]');
+            const likedPosts = JSON.parse(localStorage.getItem(getAccountStorageKey('likedPosts', currentStudentId)) || '[]');
+            const pinnedList = JSON.parse(localStorage.getItem(getAccountStorageKey('pinnedReviews', currentStudentId)) || '[]');
 
             try {
                 await Promise.all([
