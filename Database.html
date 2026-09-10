@@ -22,6 +22,10 @@ class Database {
             });
 
             const result = await response.json();
+            if (result && result.success === false && /不明なアクション|未対応のアクション/.test(result.error || '')) {
+                console.warn('GASがcreateUserを未対応のため、ローカル保存へ切り替えます。');
+                return this.localRequest(action, data);
+            }
             return result;
         } catch (error) {
             console.warn("Fetchエラー (フォールバック処理に切替):", error);

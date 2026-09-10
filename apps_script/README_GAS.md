@@ -12,6 +12,7 @@
 4. デプロイ後に表示される「Web アプリの URL」をコピーする。
 5. ローカルの `Database.html` にある `this.gasUrl = "...";` を、取得した Web アプリ URL に置き換える。
    - 例: `this.gasUrl = "https://script.google.com/macros/s/XXXXXXXX/exec";`
+   - URLへアクセスして `404 Not Found` になる場合は、Webアプリを再デプロイして新しいURLを設定してください。
 6. もしスプレッドシートでユーザー・レビューを管理する場合:
    - スプレッドシートを作成し、シート名を `users` と `reviews` にする。
    - `users` のヘッダー例: `studentId,grade,registeredAt,passwordHash,role`
