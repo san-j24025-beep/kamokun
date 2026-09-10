@@ -227,7 +227,7 @@
 
             let likedPosts = JSON.parse(localStorage.getItem('likedPosts') || '[]');
             const postKey = `${studentId}_${createdAt}`;
-            const isLiked = likedPosts.includes(postKey);
+            const currentUser = getStoredUser() || {};
 
             btn.disabled = true;
 
@@ -237,17 +237,16 @@
                 const db = new dbFrame.Database();
                 const reviewAPI = new reviewFrame.Review(db);
 
-                const result = await reviewAPI.toggleLike(studentId, createdAt, isLiked);
+                const result = await reviewAPI.toggleLike(studentId, createdAt, currentUser.studentId || '');
 
                 if (result.success) {
-                    if (isLiked) {
+                    if (result.liked) {
+                        likedPosts.push(postKey);
+                        btn.classList.add('liked');
+                    } else {
                         // いいね解除
                         likedPosts = likedPosts.filter(key => key !== postKey);
                         btn.classList.remove('liked');
-                    } else {
-                        // いいね追加
-                        likedPosts.push(postKey);
-                        btn.classList.add('liked');
                     }
                     localStorage.setItem('likedPosts', JSON.stringify(likedPosts));
                     btn.innerHTML = `👍 ${result.likes}`;
@@ -325,10 +324,13 @@
                     const comment = review.comment || '';
                     const date = review.createdAt || '';
                     const likes = review.likes || 0; // デフォルトは0
+                    const reportRatio = review.reportRatio || '';
 
                     // 1人1回いいね判定
                     const postKey = `${author}_${date}`;
-                    const isLiked = likedPosts.includes(postKey);
+                    const isLiked = Array.isArray(review.likedBy)
+                        ? review.likedBy.includes(currentStudentId)
+                        : likedPosts.includes(postKey);
                     const likeClass = isLiked ? 'like-btn liked' : 'like-btn';
 
                     // ピン留め判定
@@ -353,6 +355,7 @@
                             <div class="review-body">
                                 <strong>${escapeHTML(subject)}</strong><br>
                                 <span style="color: #d69e2e; font-size: 14px;">おすすめ度: ${getStars(rating)}</span><br><br>
+                                ${reportRatio ? `<span style="font-size: 14px;"><strong>小テスト・レポート割合:</strong> ${escapeHTML(reportRatio)}</span><br><br>` : ''}
                                 ${escapeHTML(comment).replace(/\n/g, '<br>')}
                             </div>
                             <div class="action-area">
