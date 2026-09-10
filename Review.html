@@ -8,8 +8,8 @@ class Review {
         this.db = db;
     }
 
-    async create(studentId, subject, rating, comment) {
-        return await this.db.request('createReview', { studentId, subject, rating, comment });
+    async create(studentId, subject, rating, comment, reportRatio) {
+        return await this.db.request('createReview', { studentId, subject, rating, comment, reportRatio });
     }
 
     async getAll() {
@@ -17,12 +17,13 @@ class Review {
     }
 
     async delete(studentId, createdAt) {
-        return await this.db.request('deleteReview', { studentId, createdAt });
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser') || '{}');
+        return await this.db.request('deleteReview', { studentId, createdAt, requester: currentUser.studentId || '' });
     }
 
     // ★修正: いいね切り替え用API
-    async toggleLike(studentId, createdAt, isLiked) {
-        return await this.db.request('toggleLikeReview', { studentId, createdAt, isLiked });
+    async toggleLike(studentId, createdAt, requester) {
+        return await this.db.request('toggleLikeReview', { studentId, createdAt, requester });
     }
 }
 window.Review = Review;

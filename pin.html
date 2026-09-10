@@ -275,7 +275,9 @@
 
         // ピン止め解除
         function unpinReview(button, reviewId) {
-            localStorage.removeItem(`pinned-${reviewId}`);
+            const pinnedReviews = JSON.parse(localStorage.getItem('pinnedReviews') || '[]');
+            pinnedReviews.splice(reviewId, 1);
+            localStorage.setItem('pinnedReviews', JSON.stringify(pinnedReviews));
             button.closest('.review-card').remove();
             
             // ピン止めされたレビューがない場合
@@ -360,52 +362,32 @@
             );
         }
 
-        // ピン止めされたレビューを表示
+        // 一覧画面で星を押したレビューを表示
         function displayPinnedReviews() {
             const container = document.getElementById('pinned-container');
-            const pinnedReviews = [];
-
-            // localStorageからピン止めされたレビューを取得
-            for (let key in localStorage) {
-                if (key.startsWith('pinned-')) {
-                    pinnedReviews.push(key);
-                }
-            }
-
+            const pinnedReviews = JSON.parse(localStorage.getItem('pinnedReviews') || '[]');
             if (pinnedReviews.length === 0) {
-                container.innerHTML = '<div class="empty-message">ピン止めされたレビューはまだありません</div>';
+                container.innerHTML = '<div class="empty-message">お気に入りに登録されたレビューはまだありません</div>';
                 return;
             }
 
-            container.innerHTML = '';
-
-            // ダミーレビューをピン止め用に修正
-            const dummyReview = `
-                <div class="review-card pinned" id="review-1">
+            container.innerHTML = pinnedReviews.map((review, index) => `
+                <div class="review-card pinned" data-review-key="${escapeHTML(`${review.studentId}_${review.createdAt}`)}">
                     <div class="review-header">
-                        <span>投稿者: t23xxx</span>
-                        <span>2026/07/14</span>
+                        <span>投稿者: ${escapeHTML(review.studentId || '不明')}</span>
+                        <span>${escapeHTML(review.createdAt || '')}</span>
                     </div>
                     <div class="review-body">
-                        Webプログラミング演習の課題、難しかったけど楽しかったです！
+                        <strong>${escapeHTML(review.subject || '未設定')}</strong><br>
+                        ${review.reportRatio ? `<strong>小テスト・レポート割合:</strong> ${escapeHTML(review.reportRatio)}<br>` : ''}
+                        ${escapeHTML(review.comment || '').replace(/\n/g, '<br>')}
                     </div>
                     <div class="action-area">
-                        <button class="like-btn" onclick="toggleLike(this, 1)">👍 <span class="like-count">3</span></button>
-                        <button class="pin-btn pinned" onclick="unpinReview(this, 1)">★</button>
-                    </div>
-                    <div class="comment-section">
-                        <ul class="comment-list" id="comments-1">
-                            <li class="comment-item" data-author="t23abc"><span class="comment-user" onclick="startReplyToComment(event)">t23abc:</span> それな！めちゃめちゃ苦戦しました。</li>
-                        </ul>
-                        <div class="comment-form">
-                            <input type="text" class="comment-input" placeholder="コメントを入力..." id="input-1">
-                            <button class="comment-submit" onclick="postComment(1)">送信</button>
-                        </div>
+                        <span>👍 ${Number(review.likes) || 0}</span>
+                        <button class="pin-btn active" onclick="unpinReview(this, ${index})" aria-label="お気に入りから削除">★</button>
                     </div>
                 </div>
-            `;
-
-            container.innerHTML = dummyReview;
+            `).join('');
         }
 
         // 初期化処理

@@ -69,7 +69,7 @@ class Database {
             const reviews = load(REVIEWS_KEY);
             const now = new Date().toISOString();
             const id = 'r-' + Math.random().toString(36).slice(2, 9);
-            const review = Object.assign({ id: id, createdAt: now, likes: 0 }, data);
+            const review = Object.assign({ id: id, createdAt: now, likes: 0, likedBy: [] }, data);
             reviews.unshift(review);
             save(REVIEWS_KEY, reviews);
             return { success: true, data: review };
@@ -107,13 +107,15 @@ class Database {
             const reviews = load(REVIEWS_KEY);
             const idx = reviews.findIndex(r => r.studentId === data.studentId && r.createdAt === data.createdAt);
             if (idx < 0) return { success: false, error: '投稿が見つかりません。' };
-            if (data.isLiked) {
-                reviews[idx].likes = Math.max(0, (reviews[idx].likes || 0) - 1);
-            } else {
-                reviews[idx].likes = (reviews[idx].likes || 0) + 1;
-            }
+            if (!data.requester) return { success: false, error: 'ログインユーザーを確認できません。' };
+            const likedBy = Array.isArray(reviews[idx].likedBy) ? reviews[idx].likedBy : [];
+            const userIndex = likedBy.indexOf(data.requester);
+            if (userIndex >= 0) likedBy.splice(userIndex, 1);
+            else likedBy.push(data.requester);
+            reviews[idx].likedBy = likedBy;
+            reviews[idx].likes = likedBy.length;
             save(REVIEWS_KEY, reviews);
-            return { success: true, likes: reviews[idx].likes };
+            return { success: true, likes: reviews[idx].likes, liked: userIndex < 0 };
         }
 
         return { success: false, error: '未対応のアクションです: ' + action };

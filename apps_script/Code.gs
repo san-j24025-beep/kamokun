@@ -24,7 +24,7 @@ function doPost(e) {
         '評価':'rating','rating':'rating',
         '感想':'comment','comment':'comment',
         '小テスト・レポート割合':'reportRatio','小テストレポート割合':'reportRatio','reportratio':'reportRatio',
-        'likes':'likes'
+        'likes':'likes','likedby':'likedBy','いいねユーザー':'likedBy'
       };
       return map[s] || s;
     }
@@ -32,14 +32,15 @@ function doPost(e) {
     function canonicalToPreferredHeader(canonical) {
       const pref = {
         'studentId':'studentId', 'grade':'grade', 'registeredAt':'registeredAt', 'passwordHash':'passwordHash', 'role':'role', 'displayname':'displayname',
-        'id':'id', 'subject':'subject', 'rating':'rating', 'comment':'comment', 'createdAt':'createdAt', 'reportRatio':'reportRatio', 'likes':'likes'
+        'id':'id', 'subject':'subject', 'rating':'rating', 'comment':'comment', 'createdAt':'createdAt', 'reportRatio':'reportRatio', 'likes':'likes', 'likedBy':'likedBy'
       };
       return pref[canonical] || canonical;
     }
 
     function valueForHeader(obj, header) {
       const key = normalizeHeader(header);
-      return Object.prototype.hasOwnProperty.call(obj, key) ? obj[key] : '';
+      if (!Object.prototype.hasOwnProperty.call(obj, key)) return '';
+      return key === 'likedBy' ? JSON.stringify(obj[key] || []) : obj[key];
     }
 
     function loadSheet(sheetName) {
@@ -56,6 +57,9 @@ function doPost(e) {
           const key = normalizeHeader(headers[i]);
           if (key) obj[key] = r[i];
         }
+        if (typeof obj.likedBy === 'string') {
+          try { obj.likedBy = JSON.parse(obj.likedBy); } catch (e) { obj.likedBy = []; }
+        }
         return obj;
       });
     }
@@ -66,7 +70,7 @@ function doPost(e) {
       if (!sheet) {
         sheet = ss.insertSheet(sheetName);
       }
-      const headers = sheet.getRange(1,1,1,Math.max(1,sheet.getLastColumn())).getValues()[0];
+      let headers = sheet.getRange(1,1,1,Math.max(1,sheet.getLastColumn())).getValues()[0];
       // if sheet empty, create headers from preferred mapping of object keys
       if (!headers || headers.length === 0 || headers[0] === '') {
         const keys = Object.keys(obj).map(k => canonicalToPreferredHeader(k));
@@ -74,6 +78,13 @@ function doPost(e) {
         const values = keys.map(h => valueForHeader(obj, h));
         sheet.appendRow(values);
       } else {
+        const existingKeys = headers.map(normalizeHeader);
+        const missingKeys = Object.keys(obj).filter(key => !existingKeys.includes(key));
+        if (missingKeys.length > 0) {
+          const missingHeaders = missingKeys.map(canonicalToPreferredHeader);
+          headers = headers.concat(missingHeaders);
+          sheet.getRange(1,1,1,headers.length).setValues([headers]);
+        }
         const values = headers.map(h => valueForHeader(obj, h));
         sheet.appendRow(values);
       }
@@ -94,6 +105,7 @@ function doPost(e) {
       sheet.clearContents();
       if (!headers || headers.length === 0) return;
       sheet.getRange(1,1,1,headers.length).setValues([headers]);
+      if (arr.length === 0) return;
       const values = arr.map(o => headers.map(h => valueForHeader(o, h)));
       sheet.getRange(2,1,values.length, headers.length).setValues(values);
     }
@@ -140,7 +152,7 @@ function doPost(e) {
     if (action === 'createReview') {
       const now = new Date().toISOString();
       const id = 'r-' + Math.random().toString(36).slice(2,9);
-      const review = Object.assign({ id:id, createdAt: now, likes:0 }, data);
+      const review = Object.assign({ id:id, createdAt: now, likes:0, likedBy:[] }, data);
       if (SPREADSHEET_ID) {
         appendToSheet('reviews', review);
       } else {
@@ -174,11 +186,20 @@ function doPost(e) {
     if (action === 'toggleLikeReview') {
       const idx = reviews.findIndex(r => r.studentId === data.studentId && r.createdAt === data.createdAt);
       if (idx < 0) return jsonReply({ success:false, error:'投稿が見つかりません。' });
-      if (data.isLiked) reviews[idx].likes = Math.max(0, (reviews[idx].likes||0)-1);
-      else reviews[idx].likes = (reviews[idx].likes||0)+1;
+      const requester = data.requester || '';
+      if (!requester) return jsonReply({ success:false, error:'ログインユーザーを確認できません。' });
+      const likedBy = Array.isArray(reviews[idx].likedBy) ? reviews[idx].likedBy : [];
+      const userIndex = likedBy.indexOf(requester);
+      if (userIndex >= 0) {
+        likedBy.splice(userIndex, 1);
+      } else {
+        likedBy.push(requester);
+      }
+      reviews[idx].likedBy = likedBy;
+      reviews[idx].likes = likedBy.length;
       if (SPREADSHEET_ID) saveSheetArray('reviews', reviews);
       else props.setProperty('reviews', JSON.stringify(reviews));
-      return jsonReply({ success:true, likes: reviews[idx].likes });
+      return jsonReply({ success:true, likes: reviews[idx].likes, liked: userIndex < 0 });
     }
 
     return jsonReply({ success:false, error: '未対応のアクション: ' + action });
