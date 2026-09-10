@@ -16,6 +16,7 @@
    - スプレッドシートを作成し、シート名を `users` と `reviews` にする。
    - `users` のヘッダー例: `studentId,grade,registeredAt,passwordHash,role`
    - `reviews` のヘッダー例: `id,studentId,subject,rating,comment,createdAt,likes`
+   - ヘッダーは英語のcamelCase、または `学籍番号` などの日本語表記を使用できます。
    - GAS プロジェクトの「プロジェクトのプロパティ」→「スクリプトのプロパティ」に `SPREADSHEET_ID` を追加し、スプレッドシートの ID を値にセットしてください。
    - これにより `Code.gs` は `SPREADSHEET_ID` が設定されていればスプレッドシートへ読み書きします。
 6. クライアントからは `POST` で `Content-Type: text/plain` を指定し、

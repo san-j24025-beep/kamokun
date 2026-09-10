@@ -14,16 +14,16 @@ function doPost(e) {
       const s = String(h).toLowerCase().replace(/\s|\u00A0/g,'');
       const map = {
         // users
-        '学籍番号':'studentid','studentid':'studentid','id':'studentid',
+        '学籍番号':'studentId','studentid':'studentId','id':'studentId',
         '学年':'grade','grade':'grade',
-        '登録日時':'registeredat','registeredat':'registeredat','投稿日時':'createdat','createdat':'createdat',
-        'passwordhash':'passwordhash','パスワードハッシュ':'passwordhash','password':'passwordhash',
+        '登録日時':'registeredAt','registeredat':'registeredAt','投稿日時':'createdAt','createdat':'createdAt',
+        'passwordhash':'passwordHash','パスワードハッシュ':'passwordHash','password':'passwordHash',
         'role':'role','役割':'role','表示名':'displayname','displayname':'displayname',
         // reviews
         '科目名':'subject','subject':'subject',
         '評価':'rating','rating':'rating',
         '感想':'comment','comment':'comment',
-        '小テスト・レポート割合':'reportratio','小テストレポート割合':'reportratio','reportratio':'reportratio',
+        '小テスト・レポート割合':'reportRatio','小テストレポート割合':'reportRatio','reportratio':'reportRatio',
         'likes':'likes'
       };
       return map[s] || s;
@@ -31,10 +31,15 @@ function doPost(e) {
 
     function canonicalToPreferredHeader(canonical) {
       const pref = {
-        'studentid':'学籍番号', 'grade':'学年', 'registeredat':'登録日時', 'passwordhash':'passwordHash', 'role':'役割', 'displayname':'表示名',
-        'id':'id', 'subject':'科目名', 'rating':'評価', 'comment':'感想', 'createdat':'投稿日時', 'reportratio':'小テスト・レポート割合', 'likes':'likes'
+        'studentId':'studentId', 'grade':'grade', 'registeredAt':'registeredAt', 'passwordHash':'passwordHash', 'role':'role', 'displayname':'displayname',
+        'id':'id', 'subject':'subject', 'rating':'rating', 'comment':'comment', 'createdAt':'createdAt', 'reportRatio':'reportRatio', 'likes':'likes'
       };
       return pref[canonical] || canonical;
+    }
+
+    function valueForHeader(obj, header) {
+      const key = normalizeHeader(header);
+      return Object.prototype.hasOwnProperty.call(obj, key) ? obj[key] : '';
     }
 
     function loadSheet(sheetName) {
@@ -66,10 +71,10 @@ function doPost(e) {
       if (!headers || headers.length === 0 || headers[0] === '') {
         const keys = Object.keys(obj).map(k => canonicalToPreferredHeader(k));
         sheet.getRange(1,1,1,keys.length).setValues([keys]);
-        const values = keys.map(h => obj[normalizeHeader(h)] || obj[h] || '');
+        const values = keys.map(h => valueForHeader(obj, h));
         sheet.appendRow(values);
       } else {
-        const values = headers.map(h => obj[normalizeHeader(h)] || obj[h] || '');
+        const values = headers.map(h => valueForHeader(obj, h));
         sheet.appendRow(values);
       }
     }
@@ -89,7 +94,7 @@ function doPost(e) {
       sheet.clearContents();
       if (!headers || headers.length === 0) return;
       sheet.getRange(1,1,1,headers.length).setValues([headers]);
-      const values = arr.map(o => headers.map(h => o[normalizeHeader(h)] || o[h] || ''));
+      const values = arr.map(o => headers.map(h => valueForHeader(o, h)));
       sheet.getRange(2,1,values.length, headers.length).setValues(values);
     }
 
