@@ -103,6 +103,9 @@ function doPost(e) {
     const reviews = SPREADSHEET_ID ? loadSheet('reviews') : JSON.parse(props.getProperty('reviews') || '[]');
 
     if (action === 'createUser') {
+      if (!SPREADSHEET_ID) {
+        return jsonReply({ success:false, error: 'SPREADSHEET_IDが未設定のため、スプレッドシートへ保存できません。' });
+      }
       if (!data.studentId || !data.password) {
         return jsonReply({ success:false, error: 'studentId と password を指定してください。' });
       }
@@ -113,12 +116,7 @@ function doPost(e) {
       const hashBytes = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, data.password);
       const hashHex = hashBytes.map(b => ('0' + (b & 0xFF).toString(16)).slice(-2)).join('');
       const newUser = { studentId: data.studentId, passwordHash: hashHex, registeredAt: new Date().toISOString(), role: data.role || 'user' };
-      if (SPREADSHEET_ID) {
-        appendToSheet('users', newUser);
-      } else {
-        users.push(newUser);
-        props.setProperty('users', JSON.stringify(users));
-      }
+      appendToSheet('users', newUser);
       return jsonReply({ success:true, data: { studentId: data.studentId } });
     }
 
