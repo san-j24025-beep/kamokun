@@ -122,6 +122,19 @@ function doPost(e) {
       return jsonReply({ success:true, data: { studentId: data.studentId } });
     }
 
+    if (action === 'login') {
+      if (!data.studentId || !data.password) {
+        return jsonReply({ success:false, error: '学籍番号とパスワードを入力してください。' });
+      }
+      const hashBytes = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, data.password);
+      const hashHex = hashBytes.map(b => ('0' + (b & 0xFF).toString(16)).slice(-2)).join('');
+      const user = users.find(u => u.studentId === data.studentId && u.passwordHash === hashHex);
+      if (!user) {
+        return jsonReply({ success:false, error: '学籍番号またはパスワードが間違っています。' });
+      }
+      return jsonReply({ success:true, user: { studentId: user.studentId, grade: user.grade || '', role: user.role || 'user' } });
+    }
+
     if (action === 'getUsers') {
       return jsonReply({ success:true, data: users });
     }

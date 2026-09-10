@@ -6,7 +6,7 @@
 class Database {
     constructor() {
         // 設定済みの GAS 実行 URL（ユーザー提供、修正済み）
-        this.gasUrl = "https://script.google.com/macros/s/AKfycbzbeA4TbvGD0SsPHfDlHcfrKo29LK8Mg1T8Jjco4G9jfCRClDOX_2bKGOdn19x1Ni3AZw/exec";
+        this.gasUrl = "https://script.google.com/macros/s/AKfycbz-LzoL6hbC6ss_2WfKDHHk0Qubfy6u-m2Lep34C980Nr-UdRpg3Y-Iytauymewn1InJQ/exec";
     }
 
     async request(action, data) {
@@ -47,6 +47,13 @@ class Database {
             window.db = window.db || {};
             window.db.users = users;
             return { success: true, data: { studentId: data.studentId } };
+        }
+
+        if (action === 'login') {
+            const users = load(USERS_KEY);
+            const user = users.find(u => u.studentId === data.studentId && u.password === data.password);
+            if (!user) return { success: false, error: '学籍番号またはパスワードが間違っています。' };
+            return { success: true, user: { studentId: user.studentId } };
         }
 
         if (action === 'getUsers') {
