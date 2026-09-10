@@ -113,7 +113,11 @@
             <!-- 分野 -->
             <div class="form-group">
                 <label for="category">分野・系列</label>
-                <input type="text" id="category" class="form-control" placeholder="例: 情報科学">
+                <select id="category" class="form-control" required>
+                    <option value="" selected disabled>科目区分を選択してください</option>
+                    <option value="選択科目">選択科目</option>
+                    <option value="必修科目">必修科目</option>
+                </select>
             </div>
             <!-- 科目名 -->
             <div class="form-group">
