@@ -36,4 +36,12 @@ curl -X POST "<GAS_URL>" -H "Content-Type: text/plain" --data '{"action":"create
 
 - デプロイ後、`Database.html` の `this.gasUrl` を更新すればクライアント側が本番 GAS に接続するようになります。
 
+GitHubへ変更をプッシュする場合:
+
+```bash
+git add .
+git commit -m "変更内容を説明"
+git push origin main
+```
+
 何か代行でデプロイしてほしい場合は、GASプロジェクトのソースか、デプロイ先のアクセス情報（非公開情報は共有不可）を教えてください。
