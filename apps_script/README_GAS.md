@@ -4,7 +4,8 @@
 
 手順:
 1. Google ドライブで新しい Google Apps Script プロジェクトを作成。
-2. `Code.gs` の内容をコピーして貼り付ける（既存のコードを置き換える）。
+2. このリポジトリの `apps_script/Code.gs` の内容だけをコピーして貼り付ける（既存のコードを置き換える）。`view.html` や `Database.html` などのHTMLファイルはコード.gsへ貼り付けないでください。
+   - `SyntaxError: Unexpected token '<'` が出る場合は、HTMLを貼り付けています。コード.gsを空にして、先頭が `function doPost(e) {` になる内容を貼り直してください。
 3. メニューから「デプロイ」→「新しいデプロイ」を選択。
    - 種類: Web アプリ
    - 実行するユーザー: 自分（Me）
