@@ -7,8 +7,8 @@ html, body {
     width: 100%;
     min-height: 100vh;
     font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
-    background: linear-gradient(135deg, #2c3e50, #4a00e0); /* 背景のグラデーション */
-    color: #333;
+    background: #eef6ff;
+    color: #18324f;
     display: flex;
     flex-direction: column; /* ヘッダーを上、中身を下へ正しく並べる */
     align-items: center;
@@ -52,7 +52,7 @@ h2 {
     font-size: 22px;
     font-weight: 700;
     text-align: center;
-    border-bottom: 2px solid #edf2f7;
+    border-bottom: 2px solid #d7e8f8;
     padding-bottom: 15px;
 }
 
@@ -68,7 +68,7 @@ label {
     display: block;
     margin-bottom: 8px;
     font-weight: 600;
-    color: #4a5568;
+    color: #315878;
     font-size: 14px;
 }
 
@@ -79,11 +79,11 @@ select,
 textarea {
     width: 100% !important;
     padding: 12px 14px !important;
-    border: 1px solid #cbd5e0 !important;
+    border: 1px solid #b8d2ea !important;
     border-radius: 8px !important;
-    background-color: #f8fafc !important;
+    background-color: #f7fbff !important;
     font-size: 15px !important;
-    color: #2d3748 !important;
+    color: #18324f !important;
     transition: all 0.2s ease;
     box-sizing: border-box !important;
 }
@@ -91,9 +91,9 @@ textarea {
 /* 入力中（フォーカス時）のエフェクト */
 input:focus, select:focus, textarea:focus {
     outline: none !important;
-    border-color: #4a00e0 !important;
+    border-color: #2878c8 !important;
     background-color: #ffffff !important;
-    box-shadow: 0 0 0 3px rgba(74, 0, 224, 0.15) !important;
+    box-shadow: 0 0 0 3px rgba(40, 120, 200, 0.18) !important;
 }
 
 /* ==========================================
@@ -102,7 +102,7 @@ input:focus, select:focus, textarea:focus {
 button {
     width: 100% !important;
     padding: 14px !important;
-    background: #2c3e50 !important;
+    background: #1f5fae !important;
     color: #ffffff !important;
     border: none !important;
     border-radius: 8px !important;
@@ -115,7 +115,7 @@ button {
 }
 
 button:hover {
-    background: #1a252f !important;
+    background: #174b8a !important;
 }
 
 /* 閲覧画面（view.html）用のカード共通デザイン */
