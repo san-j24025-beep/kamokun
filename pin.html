@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>ピン止め済みレビュー - かもくん</title>
+    <title>★お気に入りリスト - かもくん</title>
     <link rel="stylesheet" href="style.css">
     <script src="auth.js"></script>
     <script>
@@ -224,20 +224,22 @@
             <a href="index.html" class="nav-link">メニュー選択</a>
             <a href="view.html" class="nav-link">レビュー一覧</a>
             <a href="report.html" class="nav-link">レビュー投稿</a>
-            <a href="pin.html" class="nav-link active">📌 ピン止め済み</a>
+            <a href="pin.html" class="nav-link active">★お気に入りリスト</a>
             <button class="btn-logout" onclick="logout()">ログアウト</button>
         </nav>
     </header>
 
     <div class="container" style="max-width: 800px; margin: 40px auto; padding: 20px;">
-        <h2>📌 ピン止め済みレビュー</h2>
+        <h2>★お気に入りリスト</h2>
         
         <div id="pinned-container">
             <div class="empty-message">
-                ピン止めされたレビューはまだありません
+                お気に入りに登録されたレビューはまだありません
             </div>
         </div>
     </div>
+
+    <iframe src="Database.html" id="db-iframe" style="display:none;"></iframe>
 
     <script>
         const currentUser = getStoredUser() || { studentId: 'ゲスト', isAnonymous: false };
@@ -284,10 +286,10 @@
             localStorage.setItem(getPinnedStorageKey(), JSON.stringify(pinnedReviews));
             button.closest('.review-card').remove();
             
-            // ピン止めされたレビューがない場合
+            // お気に入りがない場合
             const container = document.getElementById('pinned-container');
             if (container.querySelectorAll('.review-card').length === 0) {
-                container.innerHTML = '<div class="empty-message">ピン止めされたレビューはまだありません</div>';
+                container.innerHTML = '<div class="empty-message">お気に入りに登録されたレビューはまだありません</div>';
             }
         }
 
@@ -366,13 +368,47 @@
             );
         }
 
-        // 一覧画面で星を押したレビューを表示
-        function displayPinnedReviews() {
+        function waitForDatabase() {
+            return new Promise(resolve => {
+                const check = setInterval(() => {
+                    const frame = document.getElementById('db-iframe');
+                    if (frame && frame.contentWindow && frame.contentWindow.Database) {
+                        clearInterval(check);
+                        resolve(new frame.contentWindow.Database());
+                    }
+                }, 50);
+            });
+        }
+
+        function reviewKey(review) {
+            return review.id || `${review.studentId}_${review.createdAt}`;
+        }
+
+        // 一覧画面で星を押したレビューを最新データで表示
+        async function displayPinnedReviews() {
             const container = document.getElementById('pinned-container');
             const pinnedReviews = JSON.parse(localStorage.getItem(getPinnedStorageKey()) || '[]');
             if (pinnedReviews.length === 0) {
                 container.innerHTML = '<div class="empty-message">お気に入りに登録されたレビューはまだありません</div>';
                 return;
+            }
+
+            try {
+                const db = await waitForDatabase();
+                const result = await db.request('getAllReviews', {});
+                const latestReviews = (result.data || []).filter(review => review.studentId && review.createdAt);
+                const latestByKey = new Map();
+                latestReviews.forEach(review => {
+                    latestByKey.set(reviewKey(review), review);
+                    latestByKey.set(`${review.studentId}_${review.createdAt}`, review);
+                });
+                pinnedReviews.forEach((review, index) => {
+                    const latest = latestByKey.get(reviewKey(review));
+                    if (latest) pinnedReviews[index] = latest;
+                });
+                localStorage.setItem(getPinnedStorageKey(), JSON.stringify(pinnedReviews));
+            } catch (error) {
+                console.warn('最新レビューの取得に失敗しました。保存済みデータを表示します。', error);
             }
 
             container.innerHTML = pinnedReviews.map((review, index) => `
