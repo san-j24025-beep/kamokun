@@ -315,7 +315,7 @@
                 const result = await reviewAPI.getAll();
                 if (result.success === false) throw new Error(result.error || "GASエラー");
 
-                let reviewsData = result.data || result || [];
+                let reviewsData = (result.data || result || []).filter(review => review.studentId && review.createdAt);
                 if (reviewsData.length === 0) {
                     container.innerHTML = '<div class="loading-message">投稿されたレビューはまだありません。</div>';
                     return;

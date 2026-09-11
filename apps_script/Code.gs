@@ -118,7 +118,8 @@ function doPost(e) {
 
     // load from spreadsheet if configured, otherwise use PropertiesService JSON
     const users = SPREADSHEET_ID ? loadSheet('users') : JSON.parse(props.getProperty('users') || '[]');
-    const reviews = SPREADSHEET_ID ? loadSheet('reviews') : JSON.parse(props.getProperty('reviews') || '[]');
+    const reviews = (SPREADSHEET_ID ? loadSheet('reviews') : JSON.parse(props.getProperty('reviews') || '[]'))
+      .filter(review => review.studentId && review.createdAt);
 
     if (action === 'createUser') {
       if (!SPREADSHEET_ID) {

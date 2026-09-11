@@ -81,7 +81,7 @@ class Database {
         }
 
         if (action === 'getAllReviews') {
-            const reviews = load(REVIEWS_KEY);
+            const reviews = load(REVIEWS_KEY).filter(review => review.studentId && review.createdAt);
             return { success: true, data: reviews };
         }
 
