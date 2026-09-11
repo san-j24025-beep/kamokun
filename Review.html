@@ -16,14 +16,14 @@ class Review {
         return await this.db.request('getAllReviews', {});
     }
 
-    async delete(studentId, createdAt) {
+    async delete(studentId, createdAt, reviewId) {
         const currentUser = JSON.parse(localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser') || '{}');
-        return await this.db.request('deleteReview', { studentId, createdAt, requester: currentUser.studentId || '' });
+        return await this.db.request('deleteReview', { studentId, createdAt, reviewId, requester: currentUser.studentId || '' });
     }
 
     // ★修正: いいね切り替え用API
-    async toggleLike(studentId, createdAt, requester) {
-        return await this.db.request('toggleLikeReview', { studentId, createdAt, requester });
+    async toggleLike(studentId, createdAt, requester, reviewId) {
+        return await this.db.request('toggleLikeReview', { studentId, createdAt, requester, reviewId });
     }
 }
 window.Review = Review;

@@ -206,7 +206,7 @@
                 const db = new dbFrame.Database();
                 const reviewAPI = new reviewFrame.Review(db);
 
-                const result = await reviewAPI.delete(studentId, createdAt);
+                const result = await reviewAPI.delete(studentId, createdAt, reviewId);
 
                 if (result.success) {
                     const card = document.getElementById(`review-${reviewId}`);
@@ -242,7 +242,7 @@
                 const db = new dbFrame.Database();
                 const reviewAPI = new reviewFrame.Review(db);
 
-                const result = await reviewAPI.toggleLike(studentId, createdAt, currentUser.studentId || '');
+                const result = await reviewAPI.toggleLike(studentId, createdAt, currentUser.studentId || '', reviewId);
 
                 if (result.success) {
                     if (result.liked) {

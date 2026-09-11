@@ -40,6 +40,11 @@ class Database {
 
         const load = (key) => JSON.parse(localStorage.getItem(key) || '[]');
         const save = (key, arr) => localStorage.setItem(key, JSON.stringify(arr));
+        const sameReview = (review, request) => {
+            if (request.reviewId && review.id && String(review.id) === String(request.reviewId)) return true;
+            return String(review.studentId || '') === String(request.studentId || '') &&
+                new Date(review.createdAt).getTime() === new Date(request.createdAt).getTime();
+        };
 
         if (action === 'createUser') {
             const users = load(USERS_KEY);
@@ -89,7 +94,7 @@ class Database {
                 requester = s ? JSON.parse(s).studentId : null;
             } catch (e) { requester = null; }
 
-            const targetIndex = reviews.findIndex(r => r.studentId === data.studentId && r.createdAt === data.createdAt);
+            const targetIndex = reviews.findIndex(r => sameReview(r, data));
             if (targetIndex < 0) return { success: false, error: '対象の投稿が見つかりません。' };
 
             const target = reviews[targetIndex];
@@ -105,7 +110,7 @@ class Database {
 
         if (action === 'toggleLikeReview') {
             const reviews = load(REVIEWS_KEY);
-            const idx = reviews.findIndex(r => r.studentId === data.studentId && r.createdAt === data.createdAt);
+            const idx = reviews.findIndex(r => sameReview(r, data));
             if (idx < 0) return { success: false, error: '投稿が見つかりません。' };
             if (!data.requester) return { success: false, error: 'ログインユーザーを確認できません。' };
             const likedBy = Array.isArray(reviews[idx].likedBy) ? reviews[idx].likedBy : [];

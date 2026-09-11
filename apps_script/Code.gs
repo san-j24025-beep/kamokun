@@ -43,6 +43,12 @@ function doPost(e) {
       return key === 'likedBy' ? JSON.stringify(obj[key] || []) : obj[key];
     }
 
+    function sameReview(review, data) {
+      if (data.reviewId && review.id && String(review.id) === String(data.reviewId)) return true;
+      return String(review.studentId || '') === String(data.studentId || '') &&
+        new Date(review.createdAt).getTime() === new Date(data.createdAt).getTime();
+    }
+
     function loadSheet(sheetName) {
       const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
       const sheet = ss.getSheetByName(sheetName);
@@ -167,7 +173,7 @@ function doPost(e) {
     }
 
     if (action === 'deleteReview') {
-      const idx = reviews.findIndex(r => r.studentId === data.studentId && r.createdAt === data.createdAt);
+      const idx = reviews.findIndex(r => sameReview(r, data));
       if (idx < 0) return jsonReply({ success:false, error:'投稿が見つかりません。' });
       const requester = data.requester || '';
       if (requester !== reviews[idx].studentId && requester !== 'J24025') {
@@ -184,7 +190,7 @@ function doPost(e) {
     }
 
     if (action === 'toggleLikeReview') {
-      const idx = reviews.findIndex(r => r.studentId === data.studentId && r.createdAt === data.createdAt);
+      const idx = reviews.findIndex(r => sameReview(r, data));
       if (idx < 0) return jsonReply({ success:false, error:'投稿が見つかりません。' });
       const requester = data.requester || '';
       if (!requester) return jsonReply({ success:false, error:'ログインユーザーを確認できません。' });
